@@ -32,8 +32,23 @@ public class ProjectCommands(ProjectDisplay projectDisplay, ProjectRepository pr
             case "pd":
                 await DeleteProject();
                 break;
+            case "ps":
+                await SearchByName();
+                break;
+            case "pm":
+                await ManageProjectTasks();
+                break;
         }
     }
+
+    private async Task ManageProjectTasks()
+    {
+        var projects = await _projectRepository.GetAllAsync();
+        await _projectMenu.ManageProjectTasksAsync(projects.ToList());
+    }
+
+    private async Task SearchByName() =>
+        await _projectMenu.SearchProjectsByNameAsync();
 
     private async Task DeleteProject()
     {

@@ -6,7 +6,7 @@ public static class TimeTrackingService
 {
     public static void UpdateTimeTracking(Tasks task, WorkStatus newStatus)
     {
-        var now = DateTimeOffset.Now;
+        var now = DateTime.UtcNow;
         var currentStatus = task.Status;
 
         if (currentStatus == WorkStatus.Active && task.ActiveStartTime.HasValue)

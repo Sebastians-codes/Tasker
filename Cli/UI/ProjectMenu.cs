@@ -187,7 +187,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
         }
     }
 
-    private async Task ManageProjectTasksAsync(List<Project> projects)
+    public async Task ManageProjectTasksAsync(List<Project> projects)
     {
         if (projects.Count == 0)
         {
@@ -209,13 +209,13 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
         while (true)
         {
             AnsiConsole.Clear();
-            
+
             var allTasks = await _taskService.GetAllTasksAsync();
             var projectTasks = allTasks.Where(t => t.ProjectId == project.Id).ToList();
-            
+
             AnsiConsole.MarkupLine($"[bold green]Project: {project.Name}[/]");
             AnsiConsole.WriteLine();
-            
+
             if (projectTasks.Count > 0)
             {
                 _taskDisplay.ShowTasksTable(projectTasks);
@@ -224,7 +224,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
             {
                 AnsiConsole.MarkupLine("[dim]No tasks in this project[/]");
             }
-            
+
             AnsiConsole.WriteLine();
 
             var action = AnsiConsole.Prompt(
@@ -331,29 +331,29 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
         _display.ShowSuccessMessage($"Task '{title}' added to project '{project.Name}' successfully!");
     }
 
-    private async Task SearchProjectsByNameAsync()
+    public async Task SearchProjectsByNameAsync()
     {
         var searchTerm = AnsiConsole.Ask<string>("Enter project name to search for:");
-        
+
         var allProjects = (await _projectService.GetAllProjectsAsync()).ToList();
-        var matchingProjects = allProjects.Where(p => 
+        var matchingProjects = allProjects.Where(p =>
             p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
-        
+
         AnsiConsole.Clear();
         AnsiConsole.MarkupLine($"[bold green]Projects matching '{searchTerm}':[/]");
         AnsiConsole.WriteLine();
-        
+
         if (matchingProjects.Count > 0)
         {
             _display.ShowProjectsTable(matchingProjects);
             AnsiConsole.WriteLine();
-            
+
             var action = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("What would you like to do with these results?")
                     .AddChoices([
                         "View project details",
-                        "Manage project tasks", 
+                        "Manage project tasks",
                         "Update project",
                         "Delete project",
                         "Back"
@@ -362,7 +362,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
             if (action != "Back")
             {
                 await HandleActionAsync(action, matchingProjects);
-                
+
                 if (action != "Manage project tasks")
                 {
                     AnsiConsole.WriteLine();

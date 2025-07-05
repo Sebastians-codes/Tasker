@@ -6,9 +6,9 @@ public class Project
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Priority Priority { get; set; }
-    public DateTimeOffset CreatedOn { get; set; } = DateTimeOffset.Now;
-    public DateTimeOffset UpdatedOn { get; set; }
-    public DateTimeOffset CompletedOn { get; set; }
+    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedOn { get; set; }
+    public DateTime CompletedOn { get; set; }
 
     public int OwnerId { get; set; }
     public User Owner { get; set; } = null!;

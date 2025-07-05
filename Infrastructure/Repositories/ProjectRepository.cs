@@ -23,7 +23,7 @@ public class ProjectRepository(TaskerDbContext context) : IProjectRepository
 
     public async Task<Project> UpdateAsync(Project project)
     {
-        project.UpdatedOn = DateTimeOffset.Now;
+        project.UpdatedOn = DateTime.UtcNow;
         _context.Projects.Update(project);
         return await Task.FromResult(project);
     }

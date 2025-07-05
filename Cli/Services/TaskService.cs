@@ -27,7 +27,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             if (currentSessionTime > 0)
             {
                 task.ActualTimeMinutes += currentSessionTime;
-                task.ActiveStartTime = DateTimeOffset.Now;
+                task.ActiveStartTime = DateTime.UtcNow;
                 await _taskRepository.UpdateAsync(task);
                 hasUpdates = true;
             }
@@ -54,7 +54,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
                 if (currentSessionTime > 0)
                 {
                     task.ActualTimeMinutes += currentSessionTime;
-                    task.ActiveStartTime = DateTimeOffset.Now;
+                    task.ActiveStartTime = DateTime.UtcNow;
                     await _taskRepository.UpdateAsync(task);
                     await _taskRepository.SaveChangesAsync();
                 }
@@ -68,7 +68,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             string title,
             string description,
             Priority priority,
-            DateTimeOffset? dueDate = null,
+            DateTime? dueDate = null,
             string? assignedTo = null,
             int? timeEstimateMinutes = null,
             int? projectId = null,
@@ -133,7 +133,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
         if (task == null || task.CompletedOn != default)
             return false;
 
-        task.CompletedOn = DateTimeOffset.Now;
+        task.CompletedOn = DateTime.UtcNow;
         task.Status = WorkStatus.Finished;
         task.Priority = Priority.None;
         await _taskRepository.UpdateAsync(task);

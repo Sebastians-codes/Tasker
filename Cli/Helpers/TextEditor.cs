@@ -7,7 +7,7 @@ public static class TextEditor
 {
     public static async Task<string> EditTextAsync(string initialText)
     {
-        var tempFile = Path.GetTempFileName();
+        var tempFile = Path.Combine(Path.GetTempPath(), $"tasker_edit_{Guid.NewGuid():N}.tmp");
 
         try
         {
@@ -22,7 +22,7 @@ public static class TextEditor
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = editorCommand.Value.FileName,
-                    Arguments = $"{editorCommand.Value.Arguments} \"{tempFile}\"",
+                    Arguments = BuildSecureArguments(editorCommand.Value.Arguments, tempFile),
                     UseShellExecute = false
                 }
             };
@@ -30,12 +30,29 @@ public static class TextEditor
             process.Start();
             await process.WaitForExitAsync();
 
+            if (!File.Exists(tempFile))
+                throw new InvalidOperationException("Temp file was deleted during editing");
+
             return await File.ReadAllTextAsync(tempFile);
         }
         finally
         {
             if (File.Exists(tempFile))
-                File.Delete(tempFile);
+            {
+                try
+                {
+                    var random = new Random();
+                    var fileSize = new FileInfo(tempFile).Length;
+                    var overwriteData = new byte[fileSize];
+                    random.NextBytes(overwriteData);
+                    await File.WriteAllBytesAsync(tempFile, overwriteData);
+                    File.Delete(tempFile);
+                }
+                catch
+                {
+                    File.Delete(tempFile);
+                }
+            }
         }
     }
 
@@ -90,5 +107,27 @@ public static class TextEditor
         {
             return false;
         }
+    }
+
+    private static string BuildSecureArguments(string baseArguments, string tempFile)
+    {
+        var escapedPath = EscapeShellArgument(tempFile);
+
+        if (string.IsNullOrEmpty(baseArguments))
+            return escapedPath;
+
+        return $"{baseArguments} {escapedPath}";
+    }
+
+    private static string EscapeShellArgument(string argument)
+    {
+        if (string.IsNullOrEmpty(argument))
+            return "\"\"";
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            return $"\"{argument.Replace("\"", "\\\"")}\"";
+        else
+            return $"\"{argument.Replace("\"", "\\\"")}\"";
     }
 }

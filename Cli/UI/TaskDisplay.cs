@@ -82,10 +82,10 @@ public class TaskDisplay
     {
         return priority switch
         {
-            Priority.Urgent => "[rgb(210,120,140)]",     // c.error
-            Priority.Important => "[rgb(230,190,140)]",  // c.warning  
-            Priority.Want => "[rgb(222,185,149)]",       // c.string
-            Priority.Wish => "[rgb(116,143,167)]",       // c.namespace
+            Priority.Urgent => "[rgb(210,120,140)]",
+            Priority.Important => "[rgb(230,190,140)]",
+            Priority.Want => "[rgb(222,185,149)]",
+            Priority.Wish => "[rgb(116,143,167)]",
             _ => "[dim]"
         };
     }
@@ -112,14 +112,14 @@ public class TaskDisplay
     {
         return status switch
         {
-            WorkStatus.NotAssigned => "[rgb(140,140,140)]",      // c.comment
-            WorkStatus.Assigned => "[rgb(230,190,140)]",         // c.warning
-            WorkStatus.Active => "[rgb(222,185,149)]",           // c.string
-            WorkStatus.Paused => "[rgb(194,150,107)]",           // c.number
-            WorkStatus.Blocked => "[rgb(210,120,140)]",          // c.error
-            WorkStatus.Testing => "[rgb(97,160,196)]",           // c.info
-            WorkStatus.Finished => "[rgb(182,196,220)]",         // c.property
-            _ => "[rgb(140,140,140)]"                            // c.comment
+            WorkStatus.NotAssigned => "[rgb(140,140,140)]",
+            WorkStatus.Assigned => "[rgb(230,190,140)]",
+            WorkStatus.Active => "[rgb(222,185,149)]",
+            WorkStatus.Paused => "[rgb(194,150,107)]",
+            WorkStatus.Blocked => "[rgb(210,120,140)]",
+            WorkStatus.Testing => "[rgb(97,160,196)]",
+            WorkStatus.Finished => "[rgb(182,196,220)]",
+            _ => "[rgb(140,140,140)]"
         };
     }
 }

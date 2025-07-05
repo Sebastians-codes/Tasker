@@ -9,7 +9,7 @@ namespace Tasker.Cli.Setup;
 
 public static class ServiceContainer
 {
-    public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, ProjectCommands projectCommands, TaskCommands taskCommands, GitService gitService, LoginUI loginUI, IUserService userService) CreateServices()
+    public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, ProjectCommands projectCommands, TaskCommands taskCommands, LoginUI loginUI, IUserService userService) CreateServices()
     {
         var factory = new DesignTimeDbContextFactory();
         var context = factory.CreateDbContext([]);
@@ -32,9 +32,8 @@ public static class ServiceContainer
 
         var taskCommands = new TaskCommands(taskDisplay, taskRepository, taskMenu);
 
-        var gitService = new GitService();
         var loginUI = new LoginUI(userService);
 
-        return (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService, loginUI, userService);
+        return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
     }
 }

@@ -2,9 +2,7 @@
 using Tasker.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-var (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService, loginUI, userService) = ServiceContainer.CreateServices();
-
-// gitService.Pull();
+var (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService) = ServiceContainer.CreateServices();
 
 var factory = new DesignTimeDbContextFactory();
 using var context = factory.CreateDbContext([]);
@@ -26,5 +24,3 @@ if (args.Length > 0)
 }
 else
     await mainMenu.ShowMenuAsync();
-
-// gitService.Push();

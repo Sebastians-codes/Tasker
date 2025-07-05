@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tasker.Infrastructure.Data;
@@ -11,9 +12,11 @@ using Tasker.Infrastructure.Data;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(TaskerDbContext))]
-    partial class TaskerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250705231133_Miggi")]
+    partial class Miggi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -89,7 +92,7 @@ namespace Infrastructure.Migrations
                     b.Property<string>("AssignedTo")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("CompletedOn")
+                    b.Property<DateTime>("CompletedOn")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedOn")
@@ -127,7 +130,7 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<DateTime?>("UpdatedOn")
+                    b.Property<DateTime>("UpdatedOn")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("UserId")

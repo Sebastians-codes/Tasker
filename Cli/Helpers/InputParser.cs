@@ -18,14 +18,14 @@ public static class InputParser
                 int.TryParse(parts[0], out int month) &&
                 int.TryParse(parts[1], out int day))
             {
-                var currentYear = DateTime.Now.Year;
+                var currentYear = DateTime.UtcNow.Year;
                 try
                 {
-                    var date = new DateTime(currentYear, month, day);
+                    var date = DateTime.SpecifyKind(new DateTime(currentYear, month, day), DateTimeKind.Utc);
 
                     // If the date has already passed this year, use next year
                     if (date < DateTime.Today)
-                        date = new DateTime(currentYear + 1, month, day);
+                        date = DateTime.SpecifyKind(new DateTime(currentYear + 1, month, day), DateTimeKind.Utc);
 
                     return date;
                 }
@@ -37,7 +37,7 @@ public static class InputParser
         }
 
         if (DateTime.TryParse(input, out DateTime result))
-            return result;
+            return DateTime.SpecifyKind(result, DateTimeKind.Utc);
 
         return null;
     }
