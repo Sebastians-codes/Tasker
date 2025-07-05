@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tasker.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using Tasker.Infrastructure.Data;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(TaskerDbContext))]
-    partial class TaskerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250705165351_AddUserAuthentication")]
+    partial class AddUserAuthentication
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
@@ -34,6 +37,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTimeOffset?>("DueDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -53,6 +59,8 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedOn");
+
+                    b.HasIndex("DueDate");
 
                     b.HasIndex("Name")
                         .IsUnique();

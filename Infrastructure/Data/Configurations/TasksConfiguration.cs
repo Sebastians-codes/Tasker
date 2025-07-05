@@ -41,7 +41,13 @@ public class TasksConfiguration : IEntityTypeConfiguration<Tasks>
             .HasForeignKey(t => t.ProjectId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(t => t.User)
+            .WithMany(u => u.Tasks)
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasIndex(t => t.ProjectId);
+        builder.HasIndex(t => t.UserId);
         builder.HasIndex(t => t.Priority);
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.CreatedOn);

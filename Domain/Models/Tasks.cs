@@ -11,6 +11,8 @@ public class Tasks
     public DateTimeOffset CompletedOn { get; set; }
     public DateTimeOffset? DueDate { get; set; }
     public string? AssignedTo { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
     public int? TimeEstimateMinutes { get; set; }
     public WorkStatus Status { get; set; } = WorkStatus.NotAssigned;
 

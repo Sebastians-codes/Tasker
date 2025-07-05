@@ -9,7 +9,9 @@ public class Project
     public DateTimeOffset CreatedOn { get; set; } = DateTimeOffset.Now;
     public DateTimeOffset UpdatedOn { get; set; }
     public DateTimeOffset CompletedOn { get; set; }
-    public DateTimeOffset? DueDate { get; set; }
+
+    public int OwnerId { get; set; }
+    public User Owner { get; set; } = null!;
 
     public List<Tasks> Tasks = [];
 }
