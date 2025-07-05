@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 var (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService) = ServiceContainer.CreateServices();
 
+gitService.Pull();
+
 var factory = new DesignTimeDbContextFactory();
 using var context = factory.CreateDbContext([]);
 await context.Database.MigrateAsync();

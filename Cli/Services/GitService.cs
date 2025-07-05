@@ -10,4 +10,7 @@ public class GitService
         Gitter.Command("commit -m \"database update\"");
         Gitter.Command("push");
     }
+
+    public void Pull() =>
+        Gitter.Command("pull");
 }

@@ -8,7 +8,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<TaskerDbCo
     public TaskerDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<TaskerDbContext>();
-        optionsBuilder.UseSqlite("Data Source=tasker.db");
+        optionsBuilder.UseSqlite("Data Source=/home/pmp/source/csharp/Tasker/tasker.db");
 
         return new TaskerDbContext(optionsBuilder.Options);
     }
