@@ -11,6 +11,9 @@ public class GitService
         Gitter.Command("push");
     }
 
-    public void Pull() =>
+    public void Pull()
+    {
+        Gitter.Command("stash");
         Gitter.Command("pull");
+    }
 }
