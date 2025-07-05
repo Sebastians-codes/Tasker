@@ -14,7 +14,7 @@ public class Gitter
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            WorkingDirectory = Directory.GetCurrentDirectory()
+            WorkingDirectory = "~/source/csharp/Tasker"
         };
 
         using var process = Process.Start(processInfo);
