@@ -6,10 +6,17 @@ namespace Tasker.Cli.Services;
 public class TaskService(ITaskRepository taskRepository) : ITaskService
 {
     private readonly ITaskRepository _taskRepository = taskRepository;
+    private User? _currentUser;
+
+    public void SetCurrentUser(User user)
+    {
+        _currentUser = user;
+    }
 
     public async Task<IEnumerable<Tasks>> GetAllTasksAsync()
     {
-        var tasks = await _taskRepository.GetAllAsync();
+        var allTasks = await _taskRepository.GetAllAsync();
+        var tasks = _currentUser != null ? allTasks.Where(t => t.UserId == _currentUser.Id) : allTasks;
 
         var activeTasks = tasks.Where(t => t.Status == WorkStatus.Active && t.ActiveStartTime.HasValue);
         var hasUpdates = false;
@@ -36,6 +43,9 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
     public async Task<Tasks?> GetTaskByIdAsync(int id)
     {
         var task = await _taskRepository.GetByIdAsync(id);
+        if (task != null && _currentUser != null && task.UserId != _currentUser.Id)
+            return null; // User can only access their own tasks
+            
         if (task != null)
         {
             if (task.Status == WorkStatus.Active && task.ActiveStartTime.HasValue)
@@ -61,6 +71,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             DateTimeOffset? dueDate = null,
             string? assignedTo = null,
             int? timeEstimateMinutes = null,
+            int? projectId = null,
             WorkStatus status =
             WorkStatus.NotAssigned
     )
@@ -76,7 +87,9 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             DueDate = dueDate,
             AssignedTo = assignedTo,
             TimeEstimateMinutes = timeEstimateMinutes,
-            Status = status
+            Status = status,
+            ProjectId = projectId,
+            UserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set")
         };
 
         await _taskRepository.AddAsync(task);

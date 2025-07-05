@@ -2,13 +2,22 @@
 using Tasker.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-var (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService) = ServiceContainer.CreateServices();
+var (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService, loginUI, userService) = ServiceContainer.CreateServices();
 
-gitService.Pull();
+// gitService.Pull();
 
 var factory = new DesignTimeDbContextFactory();
 using var context = factory.CreateDbContext([]);
 await context.Database.MigrateAsync();
+
+// Show login first
+var currentUser = await loginUI.ShowLoginAsync();
+if (currentUser == null)
+    return;
+
+// Set current user context for services
+taskService.SetCurrentUser(currentUser);
+projectService.SetCurrentUser(currentUser);
 
 if (args.Length > 0)
 {
@@ -20,4 +29,4 @@ if (args.Length > 0)
 else
     await mainMenu.ShowMenuAsync();
 
-gitService.Push();
+// gitService.Push();

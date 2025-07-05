@@ -25,18 +25,19 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 new SelectionPrompt<string>()
                     .AddChoices([
                         "View task details",
+                        "Filter tasks by status",
                         "Mark task as complete",
                         "Add new task",
                         "Update task",
                         "Delete task",
-                        "Back to main menu"
+                        "Back"
                     ]));
 
             var shouldContinue = await HandleActionAsync(action, tasks);
             if (!shouldContinue)
                 break;
 
-            if (action != "Back to main menu")
+            if (action != "Back" && action != "Filter tasks by status")
             {
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
@@ -52,6 +53,9 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
             case "View task details":
                 await ViewTaskDetailsAsync(tasks);
                 return true;
+            case "Filter tasks by status":
+                await FilterTasksByStatusAsync();
+                return true;
             case "Mark task as complete":
                 await CompleteTaskAsync(tasks);
                 return true;
@@ -64,7 +68,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
             case "Delete task":
                 await DeleteTaskAsync(tasks);
                 return true;
-            case "Back to main menu":
+            case "Back":
                 return false;
             default:
                 return true;
@@ -139,7 +143,26 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 _display.ShowErrorMessage("Invalid time format. Task will be created without time estimate.");
         }
 
-        await _taskService.CreateTaskAsync(title, description, priority, dueDate, assignedTo, timeEstimate);
+        // Project selection
+        int? projectId = null;
+        var projects = (await _projectService.GetAllProjectsAsync()).ToList();
+        if (projects.Count > 0)
+        {
+            var projectChoices = new List<string> { "No project" };
+            projectChoices.AddRange(projects.Select(p => $"#{p.Id}: {p.Name}"));
+
+            var selectedProject = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select project (optional):")
+                    .AddChoices(projectChoices));
+
+            if (selectedProject != "No project")
+            {
+                projectId = int.Parse(selectedProject.Split(':')[0].TrimStart('#'));
+            }
+        }
+
+        await _taskService.CreateTaskAsync(title, description, priority, dueDate, assignedTo, timeEstimate, projectId);
         _display.ShowSuccessMessage($"Task '{title}' added successfully!");
     }
 
@@ -197,10 +220,14 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                         .AddChoices(Enum.GetValues<Priority>()));
                 break;
             case "Status":
+                var availableStatuses = Enum.GetValues<WorkStatus>()
+                    .Where(s => s != WorkStatus.Finished)
+                    .ToArray();
+                
                 var newStatus = AnsiConsole.Prompt(
                     new SelectionPrompt<WorkStatus>()
                         .Title("Select new status:")
-                        .AddChoices(Enum.GetValues<WorkStatus>()));
+                        .AddChoices(availableStatuses));
 
                 await _taskService.UpdateTaskStatusAsync(taskToUpdate.Id, newStatus);
                 _display.ShowSuccessMessage($"Status updated to {newStatus} with time tracking!");
@@ -292,6 +319,61 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         {
             await _taskService.DeleteTaskAsync(taskToDelete.Id);
             _display.ShowErrorMessage($"Task '{taskToDelete.Title}' deleted!");
+        }
+    }
+
+    private async Task FilterTasksByStatusAsync()
+    {
+        var statusFilter = AnsiConsole.Prompt(
+            new SelectionPrompt<WorkStatus>()
+                .Title("Select status to filter by:")
+                .AddChoices(Enum.GetValues<WorkStatus>()));
+
+        await ShowFilteredTaskMenuAsync(statusFilter);
+    }
+
+    private async Task ShowFilteredTaskMenuAsync(WorkStatus statusFilter)
+    {
+        while (true)
+        {
+            AnsiConsole.Clear();
+            var allTasks = (await _taskService.GetAllTasksAsync()).ToList();
+            var filteredTasks = allTasks.Where(t => t.Status == statusFilter).ToList();
+            
+            AnsiConsole.MarkupLine($"[bold green]Tasks with status: {statusFilter}[/]");
+            AnsiConsole.WriteLine();
+            
+            if (filteredTasks.Count > 0)
+            {
+                _display.ShowTasksTable(filteredTasks);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[dim]No tasks with status '{statusFilter}'[/]");
+            }
+            
+            AnsiConsole.WriteLine();
+
+            var action = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .AddChoices([
+                        "View task details",
+                        "Mark task as complete",
+                        "Update task",
+                        "Delete task",
+                        "Back"
+                    ]));
+
+            if (action == "Back")
+                break;
+
+            var shouldContinue = await HandleActionAsync(action, filteredTasks);
+            if (!shouldContinue)
+                break;
+
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
+            Console.ReadKey(true);
         }
     }
 }

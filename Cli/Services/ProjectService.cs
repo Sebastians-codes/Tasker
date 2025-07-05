@@ -6,25 +6,37 @@ namespace Tasker.Cli.Services;
 public class ProjectService(IProjectRepository projectRepository) : IProjectService
 {
     private readonly IProjectRepository _projectRepository = projectRepository;
+    private User? _currentUser;
+
+    public void SetCurrentUser(User user)
+    {
+        _currentUser = user;
+    }
 
     public async Task<IEnumerable<Project>> GetAllProjectsAsync()
     {
-        var projects = await _projectRepository.GetAllAsync();
+        var allProjects = await _projectRepository.GetAllAsync();
+        var projects = _currentUser != null ? allProjects.Where(p => p.OwnerId == _currentUser.Id) : allProjects;
         return projects.OrderBy(p => p.Priority)
-                      .ThenBy(p => p.DueDate ?? DateTimeOffset.MaxValue);
+                      .ThenBy(p => p.CreatedOn);
     }
 
-    public async Task<Project?> GetProjectByIdAsync(int id) =>
-        await _projectRepository.GetByIdAsync(id);
+    public async Task<Project?> GetProjectByIdAsync(int id)
+    {
+        var project = await _projectRepository.GetByIdAsync(id);
+        if (project != null && _currentUser != null && project.OwnerId != _currentUser.Id)
+            return null; // User can only access their own projects
+        return project;
+    }
 
-    public async Task<Project> CreateProjectAsync(string name, string description, Priority priority, DateTimeOffset? dueDate = null)
+    public async Task<Project> CreateProjectAsync(string name, string description, Priority priority)
     {
         var project = new Project
         {
             Name = name,
             Description = description,
             Priority = priority,
-            DueDate = dueDate
+            OwnerId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set")
         };
 
         await _projectRepository.AddAsync(project);

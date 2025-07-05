@@ -5,10 +5,13 @@ using Tasker.Cli.Helpers;
 
 namespace Tasker.Cli.UI;
 
-public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
+public class ProjectMenu(IProjectService projectService, ProjectDisplay display, TaskMenu taskMenu, ITaskService taskService, TaskDisplay taskDisplay)
 {
     private readonly IProjectService _projectService = projectService;
     private readonly ProjectDisplay _display = display;
+    private readonly TaskMenu _taskMenu = taskMenu;
+    private readonly ITaskService _taskService = taskService;
+    private readonly TaskDisplay _taskDisplay = taskDisplay;
 
     public async Task ShowMenuAsync()
     {
@@ -24,17 +27,19 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
                 new SelectionPrompt<string>()
                     .AddChoices([
                         "View project details",
+                        "Search by name",
+                        "Manage project tasks",
                         "Add new project",
                         "Update project",
                         "Delete project",
-                        "Back to main menu"
+                        "Back"
                     ]));
 
             var shouldContinue = await HandleActionAsync(action, projects);
             if (!shouldContinue)
                 break;
 
-            if (action != "Back to main menu")
+            if (action != "Back" && action != "Manage project tasks" && action != "Search by name")
             {
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
@@ -50,6 +55,12 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
             case "View project details":
                 await ViewProjectDetailsAsync(projects);
                 return true;
+            case "Search by name":
+                await SearchProjectsByNameAsync();
+                return true;
+            case "Manage project tasks":
+                await ManageProjectTasksAsync(projects);
+                return true;
             case "Add new project":
                 await AddNewProjectAsync();
                 return true;
@@ -59,7 +70,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
             case "Delete project":
                 await DeleteProjectAsync(projects);
                 return true;
-            case "Back to main menu":
+            case "Back":
                 return false;
             default:
                 return true;
@@ -97,16 +108,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
                 .Title("Select priority:")
                 .AddChoices(Enum.GetValues<Priority>()));
 
-        DateTime? dueDate = null;
-        if (AnsiConsole.Confirm("Set due date?"))
-        {
-            var dateInput = AnsiConsole.Ask<string>("Enter due date (MM/dd or yyyy-MM-dd):");
-            dueDate = InputParser.ParseDate(dateInput);
-            if (dueDate == null)
-                _display.ShowErrorMessage("Invalid date format. Project will be created without due date.");
-        }
-
-        await _projectService.CreateProjectAsync(name, description, priority, dueDate);
+        await _projectService.CreateProjectAsync(name, description, priority);
         _display.ShowSuccessMessage($"Project '{name}' added successfully!");
     }
 
@@ -130,8 +132,7 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
                 .AddChoices([
                     "Name",
                     "Description",
-                    "Priority",
-                    "Due Date"
+                    "Priority"
                 ]));
 
         switch (fieldToUpdate)
@@ -159,19 +160,6 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
                         .Title("Select new priority:")
                         .AddChoices(Enum.GetValues<Priority>()));
                 break;
-            case "Due Date":
-                if (AnsiConsole.Confirm("Set due date?"))
-                {
-                    var dateInput = AnsiConsole.Ask<string>("Enter due date (MM/dd or yyyy-MM-dd):");
-                    var parsedDate = InputParser.ParseDate(dateInput);
-                    if (parsedDate != null)
-                        projectToUpdate.DueDate = parsedDate;
-                    else
-                        _display.ShowErrorMessage("Invalid date format. Due date not updated.");
-                }
-                else
-                    projectToUpdate.DueDate = null;
-                break;
         }
 
         await _projectService.UpdateProjectAsync(projectToUpdate);
@@ -198,4 +186,188 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display)
             _display.ShowErrorMessage($"Project '{projectToDelete.Name}' deleted!");
         }
     }
+
+    private async Task ManageProjectTasksAsync(List<Project> projects)
+    {
+        if (projects.Count == 0)
+        {
+            _display.ShowErrorMessage("No projects available");
+            return;
+        }
+
+        var selectedProject = AnsiConsole.Prompt(
+            new SelectionPrompt<Project>()
+                .Title("Select a project to manage tasks:")
+                .UseConverter(project => $"{project.Id}: {project.Name}")
+                .AddChoices(projects));
+
+        await ShowProjectTaskMenuAsync(selectedProject);
+    }
+
+    private async Task ShowProjectTaskMenuAsync(Project project)
+    {
+        while (true)
+        {
+            AnsiConsole.Clear();
+            
+            var allTasks = await _taskService.GetAllTasksAsync();
+            var projectTasks = allTasks.Where(t => t.ProjectId == project.Id).ToList();
+            
+            AnsiConsole.MarkupLine($"[bold green]Project: {project.Name}[/]");
+            AnsiConsole.WriteLine();
+            
+            if (projectTasks.Count > 0)
+            {
+                _taskDisplay.ShowTasksTable(projectTasks);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[dim]No tasks in this project[/]");
+            }
+            
+            AnsiConsole.WriteLine();
+
+            var action = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("What would you like to do?")
+                    .AddChoices([
+                        "View task details",
+                        "Add new task to project",
+                        "Update task",
+                        "Delete task",
+                        "Mark task as complete",
+                        "Back"
+                    ]));
+
+            var shouldContinue = await HandleProjectTaskActionAsync(action, project, projectTasks);
+            if (!shouldContinue)
+                break;
+
+            if (action != "Back")
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
+                Console.ReadKey(true);
+            }
+        }
+    }
+
+    private async Task<bool> HandleProjectTaskActionAsync(string action, Project project, List<Tasks> projectTasks)
+    {
+        switch (action)
+        {
+            case "View task details":
+                await ViewProjectTaskDetailsAsync(projectTasks);
+                return true;
+            case "Add new task to project":
+                await AddTaskToProjectAsync(project);
+                return true;
+            case "Update task":
+                await _taskMenu.UpdateTaskAsync(projectTasks);
+                return true;
+            case "Delete task":
+                await _taskMenu.DeleteTaskAsync(projectTasks);
+                return true;
+            case "Mark task as complete":
+                await _taskMenu.CompleteTaskAsync(projectTasks);
+                return true;
+            case "Back":
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    private async Task ViewProjectTaskDetailsAsync(List<Tasks> projectTasks)
+    {
+        if (projectTasks.Count == 0)
+        {
+            _display.ShowErrorMessage("No tasks in this project");
+            return;
+        }
+
+        var selectedTask = AnsiConsole.Prompt(
+            new SelectionPrompt<Tasks>()
+                .Title("Select a task to view:")
+                .UseConverter(task => $"{task.Id}: {task.Title}")
+                .AddChoices(projectTasks));
+
+        AnsiConsole.Clear();
+        _taskDisplay.ShowTaskDetails(selectedTask);
+    }
+
+    private async Task AddTaskToProjectAsync(Project project)
+    {
+        var title = AnsiConsole.Ask<string>("Enter task title:");
+        var description = AnsiConsole.Ask<string>("Enter task description:");
+        var priority = AnsiConsole.Prompt(
+            new SelectionPrompt<Priority>()
+                .Title("Select priority:")
+                .AddChoices(Enum.GetValues<Priority>()));
+
+        DateTime? dueDate = null;
+        if (AnsiConsole.Confirm("Set due date?"))
+        {
+            var dateInput = AnsiConsole.Ask<string>("Enter due date (MM/dd or yyyy-MM-dd):");
+            dueDate = InputParser.ParseDate(dateInput);
+            if (dueDate == null)
+                _display.ShowErrorMessage("Invalid date format. Task will be created without due date.");
+        }
+
+        var assignedTo = AnsiConsole.Confirm("Assign to someone?")
+            ? AnsiConsole.Ask<string>("Enter assignee name:")
+            : null;
+
+        int? timeEstimate = null;
+        if (AnsiConsole.Confirm("Set time estimate?"))
+        {
+            var timeInput = AnsiConsole.Ask<string>("Enter time estimate (e.g., 1h 30m, 1.5h, 90):");
+            timeEstimate = InputParser.ParseTimeEstimate(timeInput);
+            if (timeEstimate == null)
+                _display.ShowErrorMessage("Invalid time format. Task will be created without time estimate.");
+        }
+
+        await _taskService.CreateTaskAsync(title, description, priority, dueDate, assignedTo, timeEstimate, project.Id);
+        _display.ShowSuccessMessage($"Task '{title}' added to project '{project.Name}' successfully!");
+    }
+
+    private async Task SearchProjectsByNameAsync()
+    {
+        var searchTerm = AnsiConsole.Ask<string>("Enter project name to search for:");
+        
+        var allProjects = (await _projectService.GetAllProjectsAsync()).ToList();
+        var matchingProjects = allProjects.Where(p => 
+            p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+        
+        AnsiConsole.Clear();
+        AnsiConsole.MarkupLine($"[bold green]Projects matching '{searchTerm}':[/]");
+        AnsiConsole.WriteLine();
+        
+        if (matchingProjects.Count > 0)
+        {
+            _display.ShowProjectsTable(matchingProjects);
+            AnsiConsole.WriteLine();
+            
+            var action = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("What would you like to do with these results?")
+                    .AddChoices([
+                        "View project details",
+                        "Manage project tasks", 
+                        "Update project",
+                        "Delete project",
+                        "Back"
+                    ]));
+
+            if (action != "Back")
+            {
+                await HandleActionAsync(action, matchingProjects);
+            }
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[dim]No projects found matching '{searchTerm}'[/]");
+        }
+    }
+
 }

@@ -19,13 +19,11 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
         table.AddColumn("[rgb(190,140,150)]ID[/]");
         table.AddColumn("[rgb(190,140,150)]Name[/]");
         table.AddColumn("[rgb(190,140,150)]Priority[/]");
-        table.AddColumn("[rgb(190,140,150)]Due Date[/]");
         table.AddColumn("[rgb(190,140,150)]Task Count[/]");
 
         foreach (var project in projects)
         {
             var priorityColor = TaskDisplay.GetPriorityColor(project.Priority);
-            var dueDateText = project.DueDate?.ToString("yy/MM/dd") ?? "[dim]No due date[/]";
             var taskCount = project.Tasks?.Count ?? 0;
             var taskCountText = taskCount > 0 ? taskCount.ToString() : "[dim]0[/]";
 
@@ -33,7 +31,6 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
                 project.Id.ToString(),
                 project.Name,
                 $"{priorityColor}{project.Priority}[/]",
-                dueDateText,
                 taskCountText
             );
         }
@@ -43,11 +40,10 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
 
     public void ShowProjectDetails(Project project)
     {
-        var projectDueDateText = project.DueDate.HasValue ? $"[rgb(182,196,220)]Due:[/] {project.DueDate:yyyy/MM/dd}\n" : "";
         var taskCount = project.Tasks?.Count ?? 0;
         var taskCountText = $"[rgb(182,196,220)]Tasks:[/] {taskCount}\n";
 
-        var panel = new Panel($"[rgb(222,185,149)]{project.Name}[/]\n\n{project.Description}\n\n{projectDueDateText}{taskCountText}[rgb(140,140,140)]Created: {project.CreatedOn:yy/MM/dd}[/]")
+        var panel = new Panel($"[rgb(222,185,149)]{project.Name}[/]\n\n{project.Description}\n\n{taskCountText}[rgb(140,140,140)]Created: {project.CreatedOn:yy/MM/dd}[/]")
             .Header($"[rgb(190,140,150)]Project #{project.Id}[/]")
             .Border(BoxBorder.Rounded)
             .Padding(2, 1);
