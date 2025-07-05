@@ -58,7 +58,8 @@ public class TaskCommands(TaskDisplay taskDisplay, TaskRepository taskRepository
 
     private async Task PrintTask(int id)
     {
-        var task = await _taskRepository.GetByIdAsync(id);
+        var tasks = await _taskRepository.GetAllAsync();
+        var task = tasks.FirstOrDefault(x => x.Id == id);
 
         if (task is not null)
             _taskDisplay.ShowTaskDetails(task);
