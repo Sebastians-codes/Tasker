@@ -25,7 +25,7 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
     {
         var project = await _projectRepository.GetByIdAsync(id);
         if (project != null && _currentUser != null && project.OwnerId != _currentUser.Id)
-            return null; // User can only access their own projects
+            return null;
         return project;
     }
 

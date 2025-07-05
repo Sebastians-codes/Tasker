@@ -362,6 +362,13 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
             if (action != "Back")
             {
                 await HandleActionAsync(action, matchingProjects);
+                
+                if (action != "Manage project tasks")
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
+                    Console.ReadKey(true);
+                }
             }
         }
         else

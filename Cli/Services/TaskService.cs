@@ -45,7 +45,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
         var task = await _taskRepository.GetByIdAsync(id);
         if (task != null && _currentUser != null && task.UserId != _currentUser.Id)
             return null; // User can only access their own tasks
-            
+
         if (task != null)
         {
             if (task.Status == WorkStatus.Active && task.ActiveStartTime.HasValue)

@@ -10,12 +10,10 @@ var factory = new DesignTimeDbContextFactory();
 using var context = factory.CreateDbContext([]);
 await context.Database.MigrateAsync();
 
-// Show login first
 var currentUser = await loginUI.ShowLoginAsync();
 if (currentUser == null)
     return;
 
-// Set current user context for services
 taskService.SetCurrentUser(currentUser);
 projectService.SetCurrentUser(currentUser);
 
