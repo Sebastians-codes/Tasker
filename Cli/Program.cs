@@ -1,7 +1,6 @@
 ﻿using Tasker.Cli.Setup;
 using Tasker.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Tasker.Cli.UI.Cli;
 
 var (mainMenu, taskService, projectService, projectCommands, taskCommands, gitService) = ServiceContainer.CreateServices();
 
@@ -19,4 +18,4 @@ if (args.Length > 0)
 else
     await mainMenu.ShowMenuAsync();
 
-Console.WriteLine(gitService.Push());
+gitService.Push();
