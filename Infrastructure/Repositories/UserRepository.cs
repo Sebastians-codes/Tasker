@@ -48,4 +48,25 @@ public class UserRepository(TaskerDbContext context) : IUserRepository
 
     public async Task<int> SaveChangesAsync() =>
         await _context.SaveChangesAsync();
+
+    public async Task<UserSession> AddSessionAsync(UserSession session)
+    {
+        var entity = await _context.UserSessions.AddAsync(session);
+        return entity.Entity;
+    }
+
+    public async Task<UserSession?> GetSessionByTokenAsync(string token) =>
+        await _context.UserSessions.Include(s => s.User).FirstOrDefaultAsync(s => s.Token == token);
+
+    public async Task<UserSession> UpdateSessionAsync(UserSession session)
+    {
+        _context.UserSessions.Update(session);
+        return await Task.FromResult(session);
+    }
+
+    public async Task DeleteSessionAsync(UserSession session)
+    {
+        _context.UserSessions.Remove(session);
+        await Task.CompletedTask;
+    }
 }

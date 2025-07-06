@@ -8,6 +8,7 @@ public class TaskerDbContext(DbContextOptions<TaskerDbContext> options) : DbCont
     public DbSet<Tasks> Tasks { get; set; } = null!;
     public DbSet<Project> Projects { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<UserSession> UserSessions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

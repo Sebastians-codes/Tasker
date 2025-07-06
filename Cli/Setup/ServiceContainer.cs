@@ -4,6 +4,8 @@ using Tasker.Infrastructure.Repositories;
 using Tasker.Cli.Services;
 using Tasker.Cli.UI;
 using Tasker.Cli.UI.Cli;
+using Tasker.Cli.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Tasker.Cli.Setup;
 
@@ -11,14 +13,14 @@ public static class ServiceContainer
 {
     public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, ProjectCommands projectCommands, TaskCommands taskCommands, LoginUI loginUI, IUserService userService) CreateServices()
     {
-        var factory = new DesignTimeDbContextFactory();
-        var context = factory.CreateDbContext([]);
+        var context = CreateDbContext();
 
         var taskRepository = new TaskRepository(context);
         var projectRepository = new ProjectRepository(context);
         var userRepository = new UserRepository(context);
 
         var userService = new UserService(userRepository);
+        var sessionService = new SessionService(userRepository);
         var taskService = new TaskService(taskRepository);
         var projectService = new ProjectService(projectRepository);
 
@@ -26,14 +28,68 @@ public static class ServiceContainer
         var projectDisplay = new ProjectDisplay(taskDisplay);
         var taskMenu = new TaskMenu(taskService, projectService, taskDisplay);
         var projectMenu = new ProjectMenu(projectService, projectDisplay, taskMenu, taskService, taskDisplay);
-        var mainMenu = new MainMenu(taskMenu, projectMenu);
+        var mainMenu = new MainMenu(taskMenu, projectMenu, sessionService);
 
         var projectCommands = new ProjectCommands(projectDisplay, projectRepository, projectMenu);
 
         var taskCommands = new TaskCommands(taskDisplay, taskRepository, taskMenu);
 
-        var loginUI = new LoginUI(userService);
+        var loginUI = new LoginUI(userService, sessionService);
 
         return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
+    }
+
+    private static TaskerDbContext CreateDbContext()
+    {
+        var connectionString = GetConnectionString();
+        var optionsBuilder = new DbContextOptionsBuilder<TaskerDbContext>();
+        
+        // Determine database provider based on connection string
+        if (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) || 
+            connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
+        {
+            optionsBuilder.UseNpgsql(connectionString);
+        }
+        else
+        {
+            optionsBuilder.UseSqlite(connectionString);
+        }
+
+        return new TaskerDbContext(optionsBuilder.Options);
+    }
+
+    private static string GetConnectionString()
+    {
+        try
+        {
+            var config = AppConfig.Load();
+            
+            if (!string.IsNullOrEmpty(config.EncryptedConnectionString))
+            {
+                var decryptedConnectionString = EncryptionService.DecryptConnectionString(config.EncryptedConnectionString);
+                
+                if (!string.IsNullOrEmpty(decryptedConnectionString))
+                {
+                    // Remove quotes if they were accidentally included
+                    decryptedConnectionString = decryptedConnectionString.Trim('"', '\'');
+                    return decryptedConnectionString;
+                }
+            }
+        }
+        catch
+        {
+            // If anything fails, fall back to SQLite
+        }
+
+        // Default to SQLite database in user's app data folder
+        var appDataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+            "Tasker");
+        
+        if (!Directory.Exists(appDataPath))
+            Directory.CreateDirectory(appDataPath);
+            
+        var dbPath = Path.Combine(appDataPath, "tasker.db");
+        return $"Data Source={dbPath}";
     }
 }

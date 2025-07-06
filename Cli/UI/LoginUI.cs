@@ -1,17 +1,44 @@
 using Spectre.Console;
 using Tasker.Cli.Services;
 using Tasker.Domain.Models;
+using Tasker.Cli.Models;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Tasker.Cli.UI;
 
-public class LoginUI(IUserService userService)
+public class LoginUI(IUserService userService, SessionService sessionService)
 {
     private readonly IUserService _userService = userService;
+    private readonly SessionService _sessionService = sessionService;
 
     public async Task<User?> ShowLoginAsync()
     {
+        var config = AppConfig.Load();
+        
+        // Check for existing session
+        if (!string.IsNullOrEmpty(config.SessionToken))
+        {
+            var (decryptedToken, tokenExpiry) = EncryptionService.DecryptToken(config.SessionToken);
+            if (!string.IsNullOrEmpty(decryptedToken))
+            {
+                var session = await _sessionService.ValidateSessionAsync(decryptedToken);
+                if (session != null && session.AutoLoginEnabled)
+                {
+                    AnsiConsole.Clear();
+                    AnsiConsole.Write(new FigletText("Tasker Login").Centered().Color(Color.Blue));
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine($"[green]Auto-logging in as {session.User.Username}...[/]");
+                    Thread.Sleep(1000);
+                    return session.User;
+                }
+            }
+            
+            // Session invalid, expired, from different machine, or old format - clear it
+            config.SessionToken = null;
+            config.Save();
+        }
+
         while (true)
         {
             AnsiConsole.Clear();
@@ -31,7 +58,13 @@ public class LoginUI(IUserService userService)
                 case "Login":
                     var loginResult = await HandleLoginAsync();
                     if (loginResult != null)
+                    {
+                        // Create session with default settings
+                        var session = await _sessionService.CreateSessionAsync(loginResult, 30, false);
+                        config.SessionToken = EncryptionService.EncryptToken(session.Token, session.ExpiresAt);
+                        config.Save();
                         return loginResult;
+                    }
                     break;
                 case "Register":
                     await HandleRegisterAsync();

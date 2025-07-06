@@ -68,6 +68,9 @@ public class UserService(IUserRepository userRepository) : IUserService
     public async Task<User?> GetByIdAsync(int id) =>
         await _userRepository.GetByIdAsync(id);
 
+    public async Task<User?> GetByUsernameAsync(string username) =>
+        await _userRepository.GetByUsernameAsync(username);
+
     private static void ValidatePassword(string password)
     {
         if (string.IsNullOrWhiteSpace(password))

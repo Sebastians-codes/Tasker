@@ -13,4 +13,9 @@ public interface IUserRepository
     Task<bool> ExistsAsync(int id);
     Task<bool> UsernameExistsAsync(string username);
     Task<int> SaveChangesAsync();
+    
+    Task<UserSession> AddSessionAsync(UserSession session);
+    Task<UserSession?> GetSessionByTokenAsync(string token);
+    Task<UserSession> UpdateSessionAsync(UserSession session);
+    Task DeleteSessionAsync(UserSession session);
 }

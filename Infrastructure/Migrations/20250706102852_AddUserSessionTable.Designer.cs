@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tasker.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using Tasker.Infrastructure.Data;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(TaskerDbContext))]
-    partial class TaskerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250706102852_AddUserSessionTable")]
+    partial class AddUserSessionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
