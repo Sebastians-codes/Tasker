@@ -39,21 +39,12 @@ public static class ServiceContainer
         return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
     }
 
-    private static TaskerDbContext CreateDbContext()
+    public static TaskerDbContext CreateDbContext()
     {
         var connectionString = GetConnectionString();
         var optionsBuilder = new DbContextOptionsBuilder<TaskerDbContext>();
         
-        // Determine database provider based on connection string
-        if (connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) || 
-            connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase))
-        {
-            optionsBuilder.UseNpgsql(connectionString);
-        }
-        else
-        {
-            optionsBuilder.UseSqlite(connectionString);
-        }
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new TaskerDbContext(optionsBuilder.Options);
     }
@@ -78,18 +69,10 @@ public static class ServiceContainer
         }
         catch
         {
-            // If anything fails, fall back to SQLite
+            // If anything fails, fall back to design-time connection string
         }
 
-        // Default to SQLite database in user's app data folder
-        var appDataPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-            "Tasker");
-        
-        if (!Directory.Exists(appDataPath))
-            Directory.CreateDirectory(appDataPath);
-            
-        var dbPath = Path.Combine(appDataPath, "tasker.db");
-        return $"Data Source={dbPath}";
+        // Use the same connection string as DesignTimeDbContextFactory for consistency
+        return "Host=localhost;Database=tasker;Username=postgres;Password=password";
     }
 }

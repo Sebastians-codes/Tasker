@@ -212,7 +212,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             if (hasConnectionString)
             {
                 // Test if we can decrypt the connection string
-                var decryptedConnectionString = EncryptionService.DecryptConnectionString(config.EncryptedConnectionString);
+                var decryptedConnectionString = EncryptionService.DecryptConnectionString(config.EncryptedConnectionString!);
                 if (!string.IsNullOrEmpty(decryptedConnectionString))
                 {
                     // Show masked connection string (only show server part)
@@ -226,8 +226,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             }
             else
             {
-                AnsiConsole.MarkupLine("[yellow]No database connection configured[/]");
-                AnsiConsole.MarkupLine("[dim]Using default SQLite database[/]");
+                AnsiConsole.MarkupLine("[yellow]No PostgreSQL database connection configured[/]");
             }
             
             AnsiConsole.WriteLine();
@@ -235,7 +234,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             var choices = new List<string> { "Set Database Connection", "Back" };
             if (hasConnectionString)
             {
-                choices.Insert(1, "Remove Connection (Use SQLite)");
+                choices.Insert(1, "Remove Connection");
             }
 
             var choice = AnsiConsole.Prompt(
@@ -247,10 +246,10 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
                 case "Set Database Connection":
                     await SetDatabaseConnectionAsync(config);
                     break;
-                case "Remove Connection (Use SQLite)":
+                case "Remove Connection":
                     config.EncryptedConnectionString = null;
                     config.Save();
-                    AnsiConsole.MarkupLine("[yellow]Database connection removed. Using default SQLite.[/]");
+                    AnsiConsole.MarkupLine("[yellow]Database connection removed.[/]");
                     await Task.Delay(1500);
                     break;
                 case "Back":
@@ -265,9 +264,8 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         AnsiConsole.Write(new Rule("[cyan]Database Connection Setup[/]").LeftJustified());
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[yellow]Enter your database connection string:[/]");
-        AnsiConsole.MarkupLine("[dim]PostgreSQL: Host=localhost;Port=5432;Database=tasker;Username=user;Password=pass[/]");
-        AnsiConsole.MarkupLine("[dim]SQLite: Data Source=/path/to/database.db[/]");
+        AnsiConsole.MarkupLine("[yellow]Enter your PostgreSQL connection string:[/]");
+        AnsiConsole.MarkupLine("[dim]Example: Host=localhost;Port=5432;Database=tasker;Username=user;Password=pass[/]");
         AnsiConsole.WriteLine();
 
         var connectionString = AnsiConsole.Prompt(
