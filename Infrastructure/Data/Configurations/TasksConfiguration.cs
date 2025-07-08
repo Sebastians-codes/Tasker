@@ -52,5 +52,15 @@ public class TasksConfiguration : IEntityTypeConfiguration<Tasks>
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.CreatedOn);
         builder.HasIndex(t => t.DueDate);
+        
+        // Configure BaseEntity properties
+        builder.Property(t => t.LastModified)
+            .IsRequired();
+            
+        builder.Property(t => t.IsSynced)
+            .IsRequired();
+            
+        builder.Property(t => t.IsDeleted)
+            .IsRequired();
     }
 }

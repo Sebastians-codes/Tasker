@@ -7,10 +7,10 @@ using Tasker.Infrastructure.Data;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace Infrastructure.Migrations.SqliteDb
 {
-    [DbContext(typeof(TaskerDbContext))]
-    partial class TaskerDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(SqliteDbContext))]
+    partial class SqliteDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -34,6 +34,15 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSynced")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -45,6 +54,9 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SyncVersion")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedOn")
@@ -94,6 +106,15 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSynced")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastPausedTime")
                         .HasColumnType("TEXT");
 
@@ -108,6 +129,9 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SyncVersion")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("TimeEstimateMinutes")
@@ -150,12 +174,24 @@ namespace Infrastructure.Migrations
                     b.Property<int>("FailedLoginAttempts")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSynced")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LockoutEndTime")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SyncVersion")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Username")
@@ -189,9 +225,21 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSynced")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("MachineId")
                         .IsRequired()
                         .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SyncVersion")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Token")

@@ -30,5 +30,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             
         builder.HasIndex(u => u.Username)
             .IsUnique();
+            
+        // Configure BaseEntity properties
+        builder.Property(u => u.LastModified)
+            .IsRequired();
+            
+        builder.Property(u => u.IsSynced)
+            .IsRequired();
+            
+        builder.Property(u => u.IsDeleted)
+            .IsRequired();
     }
 }

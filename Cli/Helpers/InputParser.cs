@@ -36,8 +36,24 @@ public static class InputParser
             }
         }
 
+        // Try parsing full date formats (yyyy/MM/dd, yyyy-MM-dd, etc.)
         if (DateTime.TryParse(input, out DateTime result))
+        {
+            // Validate that the year is not in the past and not too far in the future
+            var currentYear = DateTime.UtcNow.Year;
+            if (result.Year < currentYear)
+            {
+                return null; // Reject dates with past years
+            }
+            
+            // Optional: Prevent dates too far in the future (e.g., beyond 10 years)
+            if (result.Year > currentYear + 10)
+            {
+                return null; // Reject dates beyond reasonable future
+            }
+            
             return DateTime.SpecifyKind(result, DateTimeKind.Utc);
+        }
 
         return null;
     }

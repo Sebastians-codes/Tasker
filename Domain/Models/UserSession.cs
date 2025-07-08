@@ -1,8 +1,7 @@
 namespace Tasker.Domain.Models;
 
-public class UserSession
+public class UserSession : BaseEntity
 {
-    public int Id { get; set; }
     public int UserId { get; set; }
     public string Token { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }

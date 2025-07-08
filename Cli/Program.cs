@@ -1,14 +1,10 @@
-﻿using Tasker.Cli.Setup;
+using Tasker.Cli.Setup;
 using Tasker.Cli.UI;
-using Microsoft.EntityFrameworkCore;
 
 if (!await SetupUI.EnsureDatabaseConfiguredAsync())
     return;
 
 var (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, _) = ServiceContainer.CreateServices();
-
-using var serviceContext = ServiceContainer.CreateDbContext();
-await serviceContext.Database.MigrateAsync();
 
 var currentUser = await loginUI.ShowLoginAsync();
 if (currentUser == null)

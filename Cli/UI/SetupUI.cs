@@ -21,41 +21,62 @@ public static class SetupUI
         AnsiConsole.Write(new FigletText("Tasker Setup").Centered().Color(Color.Green));
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[yellow]Welcome to Tasker! This appears to be your first time running the application.[/]");
-        AnsiConsole.MarkupLine("[yellow]Please configure your database connection:[/]");
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[yellow]Enter your PostgreSQL connection string:[/]");
-        AnsiConsole.MarkupLine("[dim]Example: Host=localhost;Port=5432;Database=tasker;Username=user;Password=pass[/]");
-        AnsiConsole.WriteLine();
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("How would you like to run Tasker?")
+                .AddChoices([
+                    "Connect to PostgreSQL database",
+                    "Run locally only (SQLite only)"
+                ]));
 
-        var connectionString = AnsiConsole.Prompt(
-            new TextPrompt<string>("Connection String:")
-                .Secret('*'));
-
-        if (!string.IsNullOrWhiteSpace(connectionString))
+        string connectionString;
+        
+        if (choice == "Connect to PostgreSQL database")
         {
-            var encryptedConnectionString = EncryptionService.EncryptConnectionString(connectionString);
-            if (!string.IsNullOrEmpty(encryptedConnectionString))
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[yellow]Enter your PostgreSQL connection string:[/]");
+            AnsiConsole.MarkupLine("[dim]Example: Host=localhost;Port=5432;Database=tasker;Username=user;Password=pass[/]");
+            AnsiConsole.WriteLine();
+
+            connectionString = AnsiConsole.Prompt(
+                new TextPrompt<string>("Connection String:")
+                    .Secret('*'));
+
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                config.EncryptedConnectionString = encryptedConnectionString;
-                config.Save();
-                AnsiConsole.MarkupLine("[green]✓ Database connection saved successfully![/]");
-                
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
-                Console.ReadKey();
-                return true;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("[red]Failed to encrypt connection string.[/]");
+                AnsiConsole.MarkupLine("[yellow]Connection string is required.[/]");
                 await Task.Delay(2000);
                 return false;
             }
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Connection string is required.[/]");
+            // Local only mode - use a dummy connection string
+            connectionString = "local_only_mode";
+            AnsiConsole.MarkupLine("[green]✓ Configured for local-only mode (SQLite only)[/]");
+        }
+
+        var encryptedConnectionString = EncryptionService.EncryptConnectionString(connectionString);
+        if (!string.IsNullOrEmpty(encryptedConnectionString))
+        {
+            config.EncryptedConnectionString = encryptedConnectionString;
+            config.Save();
+            
+            if (choice == "Connect to PostgreSQL database")
+            {
+                AnsiConsole.MarkupLine("[green]✓ Database connection saved successfully![/]");
+            }
+            
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
+            Console.ReadKey();
+            return true;
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[red]Failed to encrypt connection string.[/]");
             await Task.Delay(2000);
             return false;
         }

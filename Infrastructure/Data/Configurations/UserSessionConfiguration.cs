@@ -37,5 +37,15 @@ public class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
             
         builder.HasIndex(x => x.Token)
             .IsUnique();
+            
+        // Configure BaseEntity properties
+        builder.Property(x => x.LastModified)
+            .IsRequired();
+            
+        builder.Property(x => x.IsSynced)
+            .IsRequired();
+            
+        builder.Property(x => x.IsDeleted)
+            .IsRequired();
     }
 }

@@ -1,6 +1,8 @@
 using Spectre.Console;
 using Tasker.Cli.Models;
 using Tasker.Cli.Services;
+using Microsoft.EntityFrameworkCore;
+using Tasker.Infrastructure.Data;
 
 namespace Tasker.Cli.UI;
 
@@ -284,7 +286,14 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         
         try
         {
-            // Simple test - we'll implement this properly in the DesignTimeDbContextFactory
+            // Test the connection by trying to create a context and open a connection
+            var testOptions = new DbContextOptionsBuilder<PostgresDbContext>()
+                .UseNpgsql(connectionString)
+                .Options;
+            
+            using var testContext = new PostgresDbContext(testOptions);
+            await testContext.Database.CanConnectAsync();
+            
             var encryptedConnectionString = EncryptionService.EncryptConnectionString(connectionString);
             if (string.IsNullOrEmpty(encryptedConnectionString))
             {
@@ -298,13 +307,17 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
 
             AnsiConsole.MarkupLine("[green]✓ Database connection saved successfully![/]");
             AnsiConsole.MarkupLine("[dim]Connection string is encrypted and stored securely.[/]");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[yellow]Note: The new connection will be used for future operations.[/]");
+            AnsiConsole.MarkupLine("[yellow]Existing database contexts will continue using the previous connection.[/]");
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]✗ Failed to save connection: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]✗ Failed to connect to database: {ex.Message}[/]");
+            AnsiConsole.MarkupLine("[yellow]Connection string was not saved.[/]");
         }
 
-        await Task.Delay(2000);
+        await Task.Delay(3000);
     }
 
     private static string MaskConnectionString(string connectionString)

@@ -1,8 +1,7 @@
 namespace Tasker.Domain.Models;
 
-public class Tasks
+public class Tasks : BaseEntity
 {
-    public int Id { get; init; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Priority Priority { get; set; } = Priority.None;

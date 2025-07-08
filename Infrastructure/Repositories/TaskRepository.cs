@@ -1,46 +1,52 @@
-using Microsoft.EntityFrameworkCore;
 using Tasker.Core.Interfaces;
 using Tasker.Domain.Models;
 using Tasker.Infrastructure.Data;
 
 namespace Tasker.Infrastructure.Repositories;
 
-public class TaskRepository(TaskerDbContext context) : ITaskRepository
+public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
 {
-    private readonly TaskerDbContext _context = context;
+    private readonly DatabaseManager _databaseManager = databaseManager;
 
     public async Task<IEnumerable<Tasks>> GetAllAsync() =>
-        await _context.Tasks.Include(t => t.Project).ToListAsync();
+        await _databaseManager.GetAllTasksWithProjectAsync();
 
     public async Task<Tasks?> GetByIdAsync(int id) =>
-        await _context.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == id);
+        await _databaseManager.GetTaskWithProjectAsync(id);
 
     public async Task<Tasks> AddAsync(Tasks task)
     {
-        var entity = await _context.Tasks.AddAsync(task);
-        return entity.Entity;
+        return await _databaseManager.AddAsync(task);
     }
 
     public async Task<Tasks> UpdateAsync(Tasks task)
     {
         task.UpdatedOn = DateTime.UtcNow;
-        _context.Tasks.Update(task);
-        return await Task.FromResult(task);
+        return await _databaseManager.UpdateAsync(task);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var task = await _context.Tasks.FindAsync(id);
-        if (task == null)
+        try
+        {
+            await _databaseManager.DeleteAsync<Tasks>(id);
+            return true;
+        }
+        catch
+        {
             return false;
-
-        _context.Tasks.Remove(task);
-        return true;
+        }
     }
 
-    public async Task<bool> ExistsAsync(int id) =>
-        await _context.Tasks.AnyAsync(t => t.Id == id);
+    public async Task<bool> ExistsAsync(int id)
+    {
+        var task = await _databaseManager.GetAsync<Tasks>(id);
+        return task != null;
+    }
 
-    public async Task<int> SaveChangesAsync() =>
-        await _context.SaveChangesAsync();
+    public async Task<int> SaveChangesAsync()
+    {
+        // DatabaseManager handles saves automatically
+        return await Task.FromResult(1);
+    }
 }

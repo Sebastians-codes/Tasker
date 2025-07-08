@@ -13,11 +13,12 @@ public static class ServiceContainer
 {
     public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, ProjectCommands projectCommands, TaskCommands taskCommands, LoginUI loginUI, IUserService userService) CreateServices()
     {
-        var context = CreateDbContext();
+        var (postgresContext, sqliteContext, connectionMonitor, syncService) = CreateDatabaseServices();
+        var databaseManager = new DatabaseManager(postgresContext, sqliteContext, connectionMonitor);
 
-        var taskRepository = new TaskRepository(context);
-        var projectRepository = new ProjectRepository(context);
-        var userRepository = new UserRepository(context);
+        var taskRepository = new TaskRepository(databaseManager);
+        var projectRepository = new ProjectRepository(databaseManager);
+        var userRepository = new UserRepository(databaseManager);
 
         var userService = new UserService(userRepository);
         var sessionService = new SessionService(userRepository);
@@ -36,17 +37,69 @@ public static class ServiceContainer
 
         var loginUI = new LoginUI(userService, sessionService);
 
+        // Start initial sync: sync unsynced data TO PostgreSQL, then sync FROM PostgreSQL to SQLite
+        _ = Task.Run(async () => 
+        {
+            await syncService.SyncToPostgresAsync();       // Send unsynced data TO PostgreSQL
+            await syncService.FullSyncFromPostgresAsync(); // Get latest data FROM PostgreSQL
+        });
+
         return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
     }
 
-    public static TaskerDbContext CreateDbContext()
+    public static (PostgresDbContext postgresContext, SqliteDbContext sqliteContext, IConnectionMonitor connectionMonitor, SyncService syncService) CreateDatabaseServices()
     {
-        var connectionString = GetConnectionString();
-        var optionsBuilder = new DbContextOptionsBuilder<TaskerDbContext>();
-        
-        optionsBuilder.UseNpgsql(connectionString);
+        var postgresConnectionString = GetConnectionString();
+        var sqliteConnectionString = GetSqliteConnectionString();
 
-        return new TaskerDbContext(optionsBuilder.Options);
+        var postgresOptions = new DbContextOptionsBuilder<PostgresDbContext>()
+            .UseNpgsql(postgresConnectionString)
+            .Options;
+
+        var sqliteOptions = new DbContextOptionsBuilder<SqliteDbContext>()
+            .UseSqlite(sqliteConnectionString)
+            .Options;
+
+        var postgresContext = new PostgresDbContext(postgresOptions);
+        var sqliteContext = new SqliteDbContext(sqliteOptions);
+        var connectionMonitor = new ConnectionMonitor(postgresContext);
+        var syncService = new SyncService(postgresContext, sqliteContext, connectionMonitor);
+
+        // Migrate databases
+        try
+        {
+            postgresContext.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            // If PostgreSQL migration fails, we can still continue with SQLite
+            Console.WriteLine($"PostgreSQL migration failed: {ex.Message}");
+        }
+        
+        try
+        {
+            sqliteContext.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SQLite migration failed: {ex.Message}");
+        }
+
+        return (postgresContext, sqliteContext, connectionMonitor, syncService);
+    }
+
+
+    private static string GetSqliteConnectionString()
+    {
+        var appDataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+            "Tasker");
+        
+        if (!Directory.Exists(appDataPath))
+            Directory.CreateDirectory(appDataPath);
+            
+        var dbPath = Path.Combine(appDataPath, "tasker_local.db");
+        return $"Data Source={dbPath}";
     }
 
     private static string GetConnectionString()

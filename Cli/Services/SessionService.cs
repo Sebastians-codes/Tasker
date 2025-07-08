@@ -20,8 +20,8 @@ public class SessionService(IUserRepository userRepository)
             ExpiresAt = DateTime.UtcNow.AddDays(durationDays),
             DurationDays = durationDays,
             AutoLoginEnabled = autoLoginEnabled,
-            MachineId = machineId,
-            User = user
+            MachineId = machineId
+            // Don't set User navigation property to avoid tracking conflicts
         };
 
         await _userRepository.AddSessionAsync(session);

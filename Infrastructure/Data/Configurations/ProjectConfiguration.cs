@@ -32,5 +32,15 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.HasIndex(p => p.Name);
         builder.HasIndex(p => p.Priority);
         builder.HasIndex(p => p.CreatedOn);
+        
+        // Configure BaseEntity properties
+        builder.Property(p => p.LastModified)
+            .IsRequired();
+            
+        builder.Property(p => p.IsSynced)
+            .IsRequired();
+            
+        builder.Property(p => p.IsDeleted)
+            .IsRequired();
     }
 }

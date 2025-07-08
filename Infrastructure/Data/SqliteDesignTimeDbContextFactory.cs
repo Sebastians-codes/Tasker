@@ -3,11 +3,10 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Tasker.Infrastructure.Data;
 
-public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<TaskerDbContext>
+public class SqliteDesignTimeDbContextFactory : IDesignTimeDbContextFactory<SqliteDbContext>
 {
-    public TaskerDbContext CreateDbContext(string[] args)
+    public SqliteDbContext CreateDbContext(string[] args)
     {
-        // Default to SQLite for design-time (migrations, etc.)
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
             "Tasker");
@@ -15,12 +14,12 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<TaskerDbCo
         if (!Directory.Exists(appDataPath))
             Directory.CreateDirectory(appDataPath);
             
-        var dbPath = Path.Combine(appDataPath, "tasker.db");
+        var dbPath = Path.Combine(appDataPath, "tasker_local.db");
         var connectionString = $"Data Source={dbPath}";
         
-        var optionsBuilder = new DbContextOptionsBuilder<TaskerDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<SqliteDbContext>();
         optionsBuilder.UseSqlite(connectionString);
 
-        return new TaskerDbContext(optionsBuilder.Options);
+        return new SqliteDbContext(optionsBuilder.Options);
     }
 }
