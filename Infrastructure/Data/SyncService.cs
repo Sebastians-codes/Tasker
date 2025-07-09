@@ -423,4 +423,183 @@ public class SyncService
         }
         await _sqliteContext.SaveChangesAsync();
     }
+
+    public async Task<bool> IsPostgresAvailableAsync()
+    {
+        return await _connectionMonitor.IsPostgresAvailableAsync();
+    }
+
+    public async Task HandleUsernameConflictsAsync()
+    {
+        // Get all SQLite users that haven't been synced
+        var sqliteUsers = await _sqliteContext.Users
+            .Where(x => !x.IsDeleted && !x.IsSynced)
+            .ToListAsync();
+
+        if (!sqliteUsers.Any())
+            return;
+
+        // Get all PostgreSQL users
+        var postgresUsers = await _postgresContext.Users
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
+
+        if (!postgresUsers.Any())
+            return; // No conflicts if PostgreSQL is empty
+
+        // Check for conflicts
+        var conflicts = DetectUserConflicts(sqliteUsers, postgresUsers);
+        
+        if (!conflicts.Any())
+            return;
+
+        // Resolve conflicts
+        foreach (var conflict in conflicts)
+        {
+            await ResolveUserConflict(conflict);
+        }
+    }
+
+    private List<UserConflict> DetectUserConflicts(List<User> sqliteUsers, List<User> postgresUsers)
+    {
+        var conflicts = new List<UserConflict>();
+
+        foreach (var sqliteUser in sqliteUsers)
+        {
+            // Check for ID conflicts
+            var postgresUserWithSameId = postgresUsers.FirstOrDefault(p => p.Id == sqliteUser.Id);
+            if (postgresUserWithSameId != null)
+            {
+                if (postgresUserWithSameId.Username.ToLower() != sqliteUser.Username.ToLower())
+                {
+                    // Same ID, different username - this is a serious conflict
+                    conflicts.Add(new UserConflict
+                    {
+                        SqliteUser = sqliteUser,
+                        PostgresUser = postgresUserWithSameId,
+                        ConflictType = ConflictType.IdConflict
+                    });
+                }
+                // Same ID, same username - no conflict, will sync normally
+                continue;
+            }
+
+            // Check for username conflicts
+            var postgresUserWithSameUsername = postgresUsers.FirstOrDefault(p => 
+                p.Username.ToLower() == sqliteUser.Username.ToLower());
+            
+            if (postgresUserWithSameUsername != null)
+            {
+                // Different ID, same username - username conflict
+                conflicts.Add(new UserConflict
+                {
+                    SqliteUser = sqliteUser,
+                    PostgresUser = postgresUserWithSameUsername,
+                    ConflictType = ConflictType.UsernameConflict
+                });
+            }
+        }
+
+        return conflicts;
+    }
+
+    private async Task ResolveUserConflict(UserConflict conflict)
+    {
+        Console.Clear();
+        Console.WriteLine("=== User Conflict Resolution ===");
+        Console.WriteLine();
+
+        if (conflict.ConflictType == ConflictType.IdConflict)
+        {
+            Console.WriteLine($"CRITICAL: ID conflict detected!");
+            Console.WriteLine($"SQLite user: ID={conflict.SqliteUser.Id}, Username='{conflict.SqliteUser.Username}'");
+            Console.WriteLine($"PostgreSQL user: ID={conflict.PostgresUser.Id}, Username='{conflict.PostgresUser.Username}'");
+            Console.WriteLine("This shouldn't happen. The SQLite user will be assigned a new ID.");
+            Console.WriteLine();
+
+            // Assign new ID to SQLite user
+            conflict.SqliteUser.Id = Guid.NewGuid();
+            conflict.SqliteUser.LastModified = DateTime.UtcNow;
+            conflict.SqliteUser.IsSynced = false;
+            
+            _sqliteContext.Users.Update(conflict.SqliteUser);
+            await _sqliteContext.SaveChangesAsync();
+
+            Console.WriteLine($"✓ SQLite user assigned new ID: {conflict.SqliteUser.Id}");
+        }
+        else if (conflict.ConflictType == ConflictType.UsernameConflict)
+        {
+            Console.WriteLine($"Username conflict detected!");
+            Console.WriteLine($"Your local account '{conflict.SqliteUser.Username}' conflicts with an existing server account.");
+            Console.WriteLine("Please choose a new username for your local account.");
+            Console.WriteLine();
+
+            string newUsername = await PromptForNewUsername(conflict.SqliteUser.Username);
+            
+            conflict.SqliteUser.Username = newUsername;
+            conflict.SqliteUser.LastModified = DateTime.UtcNow;
+            conflict.SqliteUser.IsSynced = false;
+            
+            _sqliteContext.Users.Update(conflict.SqliteUser);
+            await _sqliteContext.SaveChangesAsync();
+
+            Console.WriteLine($"✓ Username updated to '{newUsername}'");
+        }
+
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
+    }
+
+    private async Task<string> PromptForNewUsername(string originalUsername)
+    {
+        string newUsername;
+        while (true)
+        {
+            Console.Write($"New username for '{originalUsername}': ");
+            newUsername = Console.ReadLine()?.Trim() ?? "";
+
+            if (string.IsNullOrWhiteSpace(newUsername))
+            {
+                Console.WriteLine("Username cannot be empty. Please try again.");
+                continue;
+            }
+
+            // Check if new username conflicts with PostgreSQL
+            var existsInPostgres = await _postgresContext.Users
+                .AnyAsync(x => x.Username.ToLower() == newUsername.ToLower() && !x.IsDeleted);
+
+            if (existsInPostgres)
+            {
+                Console.WriteLine($"Username '{newUsername}' is already taken on the server. Please choose a different one.");
+                continue;
+            }
+
+            // Check if new username conflicts with other SQLite users
+            var existsInSqlite = await _sqliteContext.Users
+                .AnyAsync(x => x.Username.ToLower() == newUsername.ToLower() && !x.IsDeleted);
+
+            if (existsInSqlite)
+            {
+                Console.WriteLine($"Username '{newUsername}' conflicts with another local account. Please choose a different one.");
+                continue;
+            }
+
+            break;
+        }
+
+        return newUsername;
+    }
+
+    private class UserConflict
+    {
+        public User SqliteUser { get; set; } = null!;
+        public User PostgresUser { get; set; } = null!;
+        public ConflictType ConflictType { get; set; }
+    }
+
+    private enum ConflictType
+    {
+        IdConflict,
+        UsernameConflict
+    }
 }
