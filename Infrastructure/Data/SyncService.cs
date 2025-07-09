@@ -52,7 +52,7 @@ public class SyncService
         catch (Exception ex)
         {
             // Log error but don't throw - sync will retry later
-            Console.WriteLine($"Sync failed: {ex.Message}");
+            // Silently fail - sync will retry later
         }
     }
 
@@ -237,11 +237,7 @@ public class SyncService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Full sync failed: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
-            }
+            // Silently fail - sync will retry later
         }
     }
 
