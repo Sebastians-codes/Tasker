@@ -53,13 +53,17 @@ public static class ServiceContainer
         var connectionMonitor = new ConnectionMonitor(postgresContext);
         var syncService = new SyncService(postgresContext, sqliteContext, connectionMonitor);
 
-        try
+        // Only migrate PostgreSQL if not in local-only mode
+        if (postgresConnectionString != "local_only_mode")
         {
-            postgresContext.Database.Migrate();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"PostgreSQL migration failed: {ex.Message}");
+            try
+            {
+                postgresContext.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"PostgreSQL migration failed: {ex.Message}");
+            }
         }
 
         try

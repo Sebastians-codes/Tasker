@@ -8,21 +8,66 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
 {
     private readonly DatabaseManager _databaseManager = databaseManager;
 
-    public async Task<IEnumerable<Project>> GetAllAsync() =>
-        await _databaseManager.GetAllProjectsWithTasksAsync();
+    public async Task<IEnumerable<Project>> GetAllAsync()
+    {
+        var projects = await _databaseManager.GetAllProjectsWithTasksAsync();
+        
+        // Decrypt all projects and their tasks after retrieval
+        foreach (var project in projects)
+        {
+            project.Decrypt();
+            foreach (var task in project.Tasks)
+            {
+                task.Decrypt();
+            }
+        }
+        
+        return projects;
+    }
 
-    public async Task<Project?> GetByIdAsync(Guid id) =>
-        await _databaseManager.GetProjectWithTasksAsync(id);
+    public async Task<Project?> GetByIdAsync(Guid id)
+    {
+        var project = await _databaseManager.GetProjectWithTasksAsync(id);
+        
+        // Decrypt project and its tasks after retrieval
+        if (project != null)
+        {
+            project.Decrypt();
+            foreach (var task in project.Tasks)
+            {
+                task.Decrypt();
+            }
+        }
+        
+        return project;
+    }
 
     public async Task<Project> AddAsync(Project project)
     {
-        return await _databaseManager.AddAsync(project);
+        // Encrypt project before saving
+        project.Encrypt();
+        
+        var result = await _databaseManager.AddAsync(project);
+        
+        // Decrypt the result for the caller
+        result.Decrypt();
+        
+        return result;
     }
 
     public async Task<Project> UpdateAsync(Project project)
     {
         project.UpdatedOn = DateTime.UtcNow;
-        return await _databaseManager.UpdateAsync(project);
+        
+        // Encrypt project before saving
+        project.Encrypt();
+        
+        var result = await _databaseManager.UpdateAsync(project);
+        
+        // Decrypt the result for the caller
+        result.Decrypt();
+        
+        return result;
     }
 
     public async Task<bool> DeleteAsync(Guid id)

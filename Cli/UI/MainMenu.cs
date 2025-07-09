@@ -352,9 +352,6 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[red]Application Restart Required[/]").Centered());
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[red]The application will now shut down to apply the new database settings.[/]");
-        AnsiConsole.MarkupLine("[yellow]You will need to log in again.[/]");
-        AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[dim]Press any key to exit...[/]");
         Console.ReadKey();
         Environment.Exit(0);

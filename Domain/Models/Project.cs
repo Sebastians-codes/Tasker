@@ -1,3 +1,5 @@
+using Tasker.Domain.Services;
+
 namespace Tasker.Domain.Models;
 
 public class Project : BaseEntity
@@ -13,4 +15,16 @@ public class Project : BaseEntity
     public User Owner { get; set; } = null!;
 
     public List<Tasks> Tasks = [];
+
+    public void Encrypt()
+    {
+        Name = DomainEncryptionService.Encrypt(Name, OwnerId);
+        Description = DomainEncryptionService.Encrypt(Description, OwnerId);
+    }
+
+    public void Decrypt()
+    {
+        Name = DomainEncryptionService.Decrypt(Name, OwnerId);
+        Description = DomainEncryptionService.Decrypt(Description, OwnerId);
+    }
 }

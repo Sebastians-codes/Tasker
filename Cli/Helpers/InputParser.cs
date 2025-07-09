@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Security;
 using Spectre.Console;
 
 namespace Tasker.Cli.Helpers;
@@ -134,7 +135,7 @@ public static class InputParser
         }
     }
 
-    public static string? GetPasswordWithEscapeHandling(string prompt)
+    public static SecureString? GetPasswordWithEscapeHandling(string prompt)
     {
         while (true)
         {
@@ -142,7 +143,7 @@ public static class InputParser
             AnsiConsole.MarkupLine("[dim]ESC to cancel[/]");
             AnsiConsole.Write("> ");
             
-            var input = "";
+            var securePassword = new SecureString();
             ConsoleKeyInfo key;
             
             while (true)
@@ -152,6 +153,7 @@ public static class InputParser
                 if (key.Key == ConsoleKey.Escape)
                 {
                     Console.WriteLine();
+                    securePassword.Dispose();
                     return null; // ESC pressed - cancellation
                 }
                 else if (key.Key == ConsoleKey.Enter)
@@ -160,30 +162,31 @@ public static class InputParser
                 }
                 else if (key.Key == ConsoleKey.Backspace)
                 {
-                    if (input.Length > 0)
+                    if (securePassword.Length > 0)
                     {
-                        input = input[..^1];
+                        securePassword.RemoveAt(securePassword.Length - 1);
                         Console.Write("\b \b");
                     }
                 }
                 else if (!char.IsControl(key.KeyChar))
                 {
-                    input += key.KeyChar;
+                    securePassword.AppendChar(key.KeyChar);
                     Console.Write("*"); // Hide password characters
                 }
             }
             
             Console.WriteLine();
-            input = input.Trim();
             
             // Password cannot be empty
-            if (string.IsNullOrWhiteSpace(input))
+            if (securePassword.Length == 0)
             {
                 AnsiConsole.MarkupLine("[red]Please enter a password.[/]");
+                securePassword.Dispose();
                 continue;
             }
             
-            return input;
+            securePassword.MakeReadOnly();
+            return securePassword;
         }
     }
 }

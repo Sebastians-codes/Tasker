@@ -1,3 +1,5 @@
+using Tasker.Domain.Services;
+
 namespace Tasker.Domain.Models;
 
 public class Tasks : BaseEntity
@@ -22,4 +24,20 @@ public class Tasks : BaseEntity
 
     public Guid? ProjectId { get; set; }
     public Project? Project { get; set; }
+
+    public void Encrypt()
+    {
+        Title = DomainEncryptionService.Encrypt(Title, UserId);
+        Description = DomainEncryptionService.Encrypt(Description, UserId);
+        if (!string.IsNullOrEmpty(AssignedTo))
+            AssignedTo = DomainEncryptionService.Encrypt(AssignedTo, UserId);
+    }
+
+    public void Decrypt()
+    {
+        Title = DomainEncryptionService.Decrypt(Title, UserId);
+        Description = DomainEncryptionService.Decrypt(Description, UserId);
+        if (!string.IsNullOrEmpty(AssignedTo))
+            AssignedTo = DomainEncryptionService.Decrypt(AssignedTo, UserId);
+    }
 }

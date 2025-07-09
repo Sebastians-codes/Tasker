@@ -8,21 +8,55 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
 {
     private readonly DatabaseManager _databaseManager = databaseManager;
 
-    public async Task<IEnumerable<Tasks>> GetAllAsync() =>
-        await _databaseManager.GetAllTasksWithProjectAsync();
+    public async Task<IEnumerable<Tasks>> GetAllAsync()
+    {
+        var tasks = await _databaseManager.GetAllTasksWithProjectAsync();
+        
+        // Decrypt all tasks after retrieval
+        foreach (var task in tasks)
+        {
+            task.Decrypt();
+        }
+        
+        return tasks;
+    }
 
-    public async Task<Tasks?> GetByIdAsync(Guid id) =>
-        await _databaseManager.GetTaskWithProjectAsync(id);
+    public async Task<Tasks?> GetByIdAsync(Guid id)
+    {
+        var task = await _databaseManager.GetTaskWithProjectAsync(id);
+        
+        // Decrypt task after retrieval
+        task?.Decrypt();
+        
+        return task;
+    }
 
     public async Task<Tasks> AddAsync(Tasks task)
     {
-        return await _databaseManager.AddAsync(task);
+        // Encrypt task before saving
+        task.Encrypt();
+        
+        var result = await _databaseManager.AddAsync(task);
+        
+        // Decrypt the result for the caller
+        result.Decrypt();
+        
+        return result;
     }
 
     public async Task<Tasks> UpdateAsync(Tasks task)
     {
         task.UpdatedOn = DateTime.UtcNow;
-        return await _databaseManager.UpdateAsync(task);
+        
+        // Encrypt task before saving
+        task.Encrypt();
+        
+        var result = await _databaseManager.UpdateAsync(task);
+        
+        // Decrypt the result for the caller
+        result.Decrypt();
+        
+        return result;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
