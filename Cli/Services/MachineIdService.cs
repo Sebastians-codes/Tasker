@@ -10,9 +10,8 @@ public static class MachineIdService
     {
         try
         {
-            // Collect multiple identifiers for stronger fingerprinting
             var identifiers = new List<string>();
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 identifiers.Add(GetWindowsMachineId());
@@ -34,22 +33,19 @@ public static class MachineIdService
                 identifiers.Add(Environment.MachineName);
                 identifiers.Add(Environment.UserName);
             }
-            
-            // Remove empty identifiers and combine
+
             var validIdentifiers = identifiers.Where(x => !string.IsNullOrWhiteSpace(x));
             var combinedInfo = string.Join(":", validIdentifiers);
-            
-            // Add system entropy (but stable) and use SHA-512 for stronger collision resistance
+
             var entropyString = $"{Environment.ProcessorCount}:{Environment.Is64BitOperatingSystem}:{Environment.OSVersion.Platform}";
             var finalInput = $"{combinedInfo}:{entropyString}";
-            
+
             using var sha512 = SHA512.Create();
             var hash = sha512.ComputeHash(Encoding.UTF8.GetBytes(finalInput));
             return Convert.ToHexString(hash);
         }
         catch
         {
-            // Secure fallback - use multiple system properties with entropy
             var fallback = $"{Environment.MachineName}:{Environment.UserName}:{Environment.OSVersion}:{Environment.ProcessorCount}";
             using var sha512 = SHA512.Create();
             var hash = sha512.ComputeHash(Encoding.UTF8.GetBytes(fallback));
@@ -61,7 +57,6 @@ public static class MachineIdService
     {
         try
         {
-            // Use wmic command as fallback since System.Management isn't available on all platforms
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
@@ -73,12 +68,11 @@ public static class MachineIdService
                     CreateNoWindow = true
                 }
             };
-            
+
             process.Start();
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
-            
-            // Parse UUID from output
+
             var lines = output.Split('\n');
             foreach (var line in lines)
             {
@@ -89,7 +83,7 @@ public static class MachineIdService
                         return uuid;
                 }
             }
-            
+
             return Environment.MachineName;
         }
         catch
@@ -102,19 +96,12 @@ public static class MachineIdService
     {
         try
         {
-            // Try /etc/machine-id first (systemd)
             if (File.Exists("/etc/machine-id"))
-            {
                 return File.ReadAllText("/etc/machine-id").Trim();
-            }
-            
-            // Try /var/lib/dbus/machine-id (older systems)
+
             if (File.Exists("/var/lib/dbus/machine-id"))
-            {
                 return File.ReadAllText("/var/lib/dbus/machine-id").Trim();
-            }
-            
-            // Fallback to hostname
+
             return Environment.MachineName;
         }
         catch
@@ -127,7 +114,6 @@ public static class MachineIdService
     {
         try
         {
-            // Use system_profiler to get hardware UUID
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
@@ -139,12 +125,11 @@ public static class MachineIdService
                     CreateNoWindow = true
                 }
             };
-            
+
             process.Start();
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
-            
-            // Parse hardware UUID from output
+
             var lines = output.Split('\n');
             foreach (var line in lines)
             {
@@ -154,7 +139,7 @@ public static class MachineIdService
                     return uuid;
                 }
             }
-            
+
             return Environment.MachineName;
         }
         catch
@@ -167,26 +152,19 @@ public static class MachineIdService
     {
         try
         {
-            // Try to get additional Linux system identifiers
             var identifiers = new List<string>();
-            
-            // CPU info
+
             if (File.Exists("/proc/cpuinfo"))
             {
                 var cpuInfo = File.ReadAllText("/proc/cpuinfo");
                 var serialLine = cpuInfo.Split('\n').FirstOrDefault(line => line.StartsWith("Serial"));
                 if (!string.IsNullOrEmpty(serialLine))
-                {
                     identifiers.Add(serialLine.Split(':')[1].Trim());
-                }
             }
-            
-            // Boot ID
+
             if (File.Exists("/proc/sys/kernel/random/boot_id"))
-            {
                 identifiers.Add(File.ReadAllText("/proc/sys/kernel/random/boot_id").Trim());
-            }
-            
+
             return string.Join(":", identifiers.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
         catch

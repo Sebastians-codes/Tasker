@@ -10,7 +10,6 @@ public static class InputParser
         if (string.IsNullOrWhiteSpace(input))
             return null;
 
-        // Try parsing MM/dd format
         if (Regex.IsMatch(input, @"^\d{1,2}/\d{1,2}$"))
         {
             var parts = input.Split('/');
@@ -23,7 +22,6 @@ public static class InputParser
                 {
                     var date = DateTime.SpecifyKind(new DateTime(currentYear, month, day), DateTimeKind.Utc);
 
-                    // If the date has already passed this year, use next year
                     if (date < DateTime.Today)
                         date = DateTime.SpecifyKind(new DateTime(currentYear + 1, month, day), DateTimeKind.Utc);
 
@@ -31,27 +29,22 @@ public static class InputParser
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    return null; // Invalid date
+                    return null;
                 }
             }
         }
 
-        // Try parsing full date formats (yyyy/MM/dd, yyyy-MM-dd, etc.)
         if (DateTime.TryParse(input, out DateTime result))
         {
-            // Validate that the year is not in the past and not too far in the future
             var currentYear = DateTime.UtcNow.Year;
             if (result.Year < currentYear)
-            {
-                return null; // Reject dates with past years
-            }
-            
-            // Optional: Prevent dates too far in the future (e.g., beyond 10 years)
+                return null;
+
             if (result.Year > currentYear + 10)
             {
-                return null; // Reject dates beyond reasonable future
+                return null;
             }
-            
+
             return DateTime.SpecifyKind(result, DateTimeKind.Utc);
         }
 
@@ -72,11 +65,9 @@ public static class InputParser
         {
             int totalMinutes = 0;
 
-            // Parse hours
             if (match.Groups[1].Success && double.TryParse(match.Groups[1].Value, out double hours))
                 totalMinutes += (int)(hours * 60);
 
-            // Parse minutes
             if (match.Groups[2].Success && int.TryParse(match.Groups[2].Value, out int minutes))
                 totalMinutes += minutes;
 

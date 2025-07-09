@@ -86,7 +86,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
 
             var config = AppConfig.Load();
             Domain.Models.UserSession? currentSession = null;
-            
+
             if (!string.IsNullOrEmpty(config.SessionToken))
             {
                 var (decryptedToken, tokenExpiry) = EncryptionService.DecryptToken(config.SessionToken);
@@ -100,11 +100,11 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             {
                 var autoLoginStatus = currentSession.AutoLoginEnabled ? "[green]✓ Enabled[/]" : "[red]✗ Disabled[/]";
                 var expiresAt = currentSession.ExpiresAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
-                
+
                 AnsiConsole.MarkupLine($"Auto-login: {autoLoginStatus}");
                 AnsiConsole.MarkupLine($"Session Duration: [cyan]{currentSession.DurationDays} days[/]");
                 AnsiConsole.MarkupLine($"Expires: [yellow]{expiresAt}[/]");
-                
+
                 AnsiConsole.WriteLine();
 
                 var choice = AnsiConsole.Prompt(
@@ -131,13 +131,13 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             {
                 AnsiConsole.MarkupLine("[yellow]No active session - please log in to configure auto-login[/]");
                 AnsiConsole.WriteLine();
-                
+
                 var choice = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
                         .AddChoices([
                             "Back"
                         ]));
-                
+
                 if (choice == "Back")
                     return;
             }
@@ -156,7 +156,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         var newAutoLoginStatus = !currentSession.AutoLoginEnabled;
         var (decryptedToken, _) = EncryptionService.DecryptToken(config.SessionToken!);
         await _sessionService.UpdateSessionSettingsAsync(decryptedToken, autoLoginEnabled: newAutoLoginStatus);
-        
+
         var status = newAutoLoginStatus ? "[green]enabled[/]" : "[red]disabled[/]";
         AnsiConsole.MarkupLine($"Auto-login {status}!");
         await Task.Delay(1000);
@@ -210,14 +210,12 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
 
             var config = AppConfig.Load();
             var hasConnectionString = !string.IsNullOrEmpty(config.EncryptedConnectionString);
-            
+
             if (hasConnectionString)
             {
-                // Test if we can decrypt the connection string
                 var decryptedConnectionString = EncryptionService.DecryptConnectionString(config.EncryptedConnectionString!);
                 if (!string.IsNullOrEmpty(decryptedConnectionString))
                 {
-                    // Show masked connection string (only show server part)
                     var maskedConnectionString = MaskConnectionString(decryptedConnectionString);
                     AnsiConsole.MarkupLine($"[green]✓[/] Connection configured: [yellow]{maskedConnectionString}[/]");
                 }
@@ -230,7 +228,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             {
                 AnsiConsole.MarkupLine("[yellow]No PostgreSQL database connection configured[/]");
             }
-            
+
             AnsiConsole.WriteLine();
 
             var choices = new List<string> { "Set Database Connection", "Back" };
@@ -281,19 +279,17 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             return;
         }
 
-        // Test the connection
         AnsiConsole.MarkupLine("[blue]Testing database connection...[/]");
-        
+
         try
         {
-            // Test the connection by trying to create a context and open a connection
             var testOptions = new DbContextOptionsBuilder<PostgresDbContext>()
                 .UseNpgsql(connectionString)
                 .Options;
-            
+
             using var testContext = new PostgresDbContext(testOptions);
             await testContext.Database.CanConnectAsync();
-            
+
             var encryptedConnectionString = EncryptionService.EncryptConnectionString(connectionString);
             if (string.IsNullOrEmpty(encryptedConnectionString))
             {
@@ -324,11 +320,10 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
     {
         try
         {
-            // Extract just the server part for display
             var parts = connectionString.Split(';');
             var hostPart = parts.FirstOrDefault(p => p.Trim().StartsWith("Host=", StringComparison.OrdinalIgnoreCase));
             var databasePart = parts.FirstOrDefault(p => p.Trim().StartsWith("Database=", StringComparison.OrdinalIgnoreCase));
-            
+
             if (hostPart != null && databasePart != null)
             {
                 var host = hostPart.Split('=')[1].Trim();
@@ -338,9 +333,8 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         }
         catch
         {
-            // If parsing fails, show generic message
         }
-        
+
         return "***configured***";
     }
 }

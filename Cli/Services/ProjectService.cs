@@ -62,40 +62,4 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
     public async Task<bool> ProjectExistsAsync(int projectId) =>
         await _projectRepository.ExistsAsync(projectId);
 
-    // public async Task EnsureSampleDataAsync()
-    // {
-    //     var projects = await _projectRepository.GetAllAsync();
-    //     if (projects.Any())
-    //         return;
-
-    //     var sampleProjects = new[]
-    //     {
-    //         new Project
-    //         {
-    //             Name = "Website Redesign",
-    //             Description = "Complete overhaul of company website with modern design and improved UX",
-    //             Priority = Priority.Important,
-    //             DueDate = DateTimeOffset.Now.AddDays(30)
-    //         },
-    //         new Project
-    //         {
-    //             Name = "Mobile App Development",
-    //             Description = "Create mobile application for iOS and Android platforms",
-    //             Priority = Priority.Want,
-    //             DueDate = DateTimeOffset.Now.AddDays(60)
-    //         },
-    //         new Project
-    //         {
-    //             Name = "Database Migration",
-    //             Description = "Migrate legacy database to new cloud infrastructure",
-    //             Priority = Priority.Urgent,
-    //             DueDate = DateTimeOffset.Now.AddDays(15)
-    //         }
-    //     };
-
-    //     foreach (var project in sampleProjects)
-    //         await _projectRepository.AddAsync(project);
-
-    //     await _projectRepository.SaveChangesAsync();
-    // }
 }

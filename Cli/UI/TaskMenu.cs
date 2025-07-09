@@ -143,7 +143,6 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 _display.ShowErrorMessage("Invalid time format. Task will be created without time estimate.");
         }
 
-        // Project selection
         int? projectId = null;
         var projects = (await _projectService.GetAllProjectsAsync()).ToList();
         if (projects.Count > 0)
@@ -223,7 +222,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 var availableStatuses = Enum.GetValues<WorkStatus>()
                     .Where(s => s != WorkStatus.Finished)
                     .ToArray();
-                
+
                 var newStatus = AnsiConsole.Prompt(
                     new SelectionPrompt<WorkStatus>()
                         .Title("Select new status:")
@@ -339,10 +338,10 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
             AnsiConsole.Clear();
             var allTasks = (await _taskService.GetAllTasksAsync()).ToList();
             var filteredTasks = allTasks.Where(t => t.Status == statusFilter).ToList();
-            
+
             AnsiConsole.MarkupLine($"[bold green]Tasks with status: {statusFilter}[/]");
             AnsiConsole.WriteLine();
-            
+
             if (filteredTasks.Count > 0)
             {
                 _display.ShowTasksTable(filteredTasks);
@@ -351,7 +350,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
             {
                 AnsiConsole.MarkupLine($"[dim]No tasks with status '{statusFilter}'[/]");
             }
-            
+
             AnsiConsole.WriteLine();
 
             var action = AnsiConsole.Prompt(

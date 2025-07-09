@@ -12,7 +12,7 @@ public class SessionService(IUserRepository userRepository)
     {
         var token = GenerateSecureToken();
         var machineId = MachineIdService.GetMachineId();
-        
+
         var session = new UserSession
         {
             UserId = user.Id,
@@ -21,12 +21,11 @@ public class SessionService(IUserRepository userRepository)
             DurationDays = durationDays,
             AutoLoginEnabled = autoLoginEnabled,
             MachineId = machineId
-            // Don't set User navigation property to avoid tracking conflicts
         };
 
         await _userRepository.AddSessionAsync(session);
         await _userRepository.SaveChangesAsync();
-        
+
         return session;
     }
 
@@ -34,9 +33,9 @@ public class SessionService(IUserRepository userRepository)
     {
         var session = await _userRepository.GetSessionByTokenAsync(token);
         var currentMachineId = MachineIdService.GetMachineId();
-        
-        if (session == null || 
-            session.ExpiresAt <= DateTime.UtcNow || 
+
+        if (session == null ||
+            session.ExpiresAt <= DateTime.UtcNow ||
             session.MachineId != currentMachineId)
         {
             if (session != null)
@@ -70,7 +69,7 @@ public class SessionService(IUserRepository userRepository)
                 session.DurationDays = durationDays.Value;
                 session.ExpiresAt = DateTime.UtcNow.AddDays(durationDays.Value);
             }
-            
+
             if (autoLoginEnabled.HasValue)
             {
                 session.AutoLoginEnabled = autoLoginEnabled.Value;

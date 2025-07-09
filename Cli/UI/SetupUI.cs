@@ -32,7 +32,7 @@ public static class SetupUI
                 ]));
 
         string connectionString;
-        
+
         if (choice == "Connect to PostgreSQL database")
         {
             AnsiConsole.WriteLine();
@@ -53,7 +53,6 @@ public static class SetupUI
         }
         else
         {
-            // Local only mode - use a dummy connection string
             connectionString = "local_only_mode";
             AnsiConsole.MarkupLine("[green]✓ Configured for local-only mode (SQLite only)[/]");
         }
@@ -63,12 +62,12 @@ public static class SetupUI
         {
             config.EncryptedConnectionString = encryptedConnectionString;
             config.Save();
-            
+
             if (choice == "Connect to PostgreSQL database")
             {
                 AnsiConsole.MarkupLine("[green]✓ Database connection saved successfully![/]");
             }
-            
+
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine("[dim]Press any key to continue...[/]");
             Console.ReadKey();

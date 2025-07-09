@@ -11,7 +11,7 @@ public class DatabaseManager
     private readonly IConnectionMonitor _connectionMonitor;
 
     public DatabaseManager(
-        PostgresDbContext postgresContext, 
+        PostgresDbContext postgresContext,
         SqliteDbContext sqliteContext,
         IConnectionMonitor connectionMonitor)
     {
@@ -23,7 +23,7 @@ public class DatabaseManager
     public async Task<T?> GetAsync<T>(int id) where T : BaseEntity
     {
         T? result = null;
-        
+
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
             try
@@ -35,7 +35,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -63,7 +62,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -87,7 +85,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -112,7 +109,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -137,7 +133,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -162,7 +157,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -175,36 +169,31 @@ public class DatabaseManager
 
     public async Task<T> AddAsync<T>(T entity) where T : BaseEntity
     {
-        // Clear change tracker to avoid tracking conflicts
         _sqliteContext.ChangeTracker.Clear();
         _postgresContext.ChangeTracker.Clear();
-        
-        // Always add to SQLite first
+
         entity.LastModified = DateTime.UtcNow;
         entity.IsSynced = false;
         entity.SyncVersion = Guid.NewGuid().ToString();
-        
+
         _sqliteContext.Set<T>().Add(entity);
         await _sqliteContext.SaveChangesAsync();
 
-        // Try to add to PostgreSQL if available
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
             try
             {
                 var postgresEntity = CloneEntityForPostgres(entity);
                 postgresEntity.IsSynced = true;
-                
+
                 _postgresContext.Set<T>().Add(postgresEntity);
                 await _postgresContext.SaveChangesAsync();
-                
-                // Mark as synced in SQLite
+
                 entity.IsSynced = true;
                 await _sqliteContext.SaveChangesAsync();
             }
             catch
             {
-                // PostgreSQL failed, data remains in SQLite as unsynced
             }
         }
 
@@ -213,53 +202,45 @@ public class DatabaseManager
 
     public async Task<T> UpdateAsync<T>(T entity) where T : BaseEntity
     {
-        // Clear change tracker to avoid tracking conflicts
         _sqliteContext.ChangeTracker.Clear();
         _postgresContext.ChangeTracker.Clear();
-        
-        // Always update SQLite first
+
         entity.LastModified = DateTime.UtcNow;
         entity.IsSynced = false;
         entity.SyncVersion = Guid.NewGuid().ToString();
-        
+
         _sqliteContext.Set<T>().Update(entity);
         await _sqliteContext.SaveChangesAsync();
 
-        // Try to update PostgreSQL if available
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
             try
             {
-                // Find the existing entity in PostgreSQL
                 var existingEntity = await _postgresContext.Set<T>()
                     .Where(e => e.Id == entity.Id && !e.IsDeleted)
                     .FirstOrDefaultAsync();
-                
+
                 if (existingEntity != null)
                 {
-                    // Update properties of the existing tracked entity
                     UpdateEntityProperties(entity, existingEntity);
                     existingEntity.IsSynced = true;
-                    
+
                     await _postgresContext.SaveChangesAsync();
                 }
                 else
                 {
-                    // Entity doesn't exist in PostgreSQL, add it
                     var postgresEntity = CloneEntityForPostgres(entity);
                     postgresEntity.IsSynced = true;
-                    
+
                     _postgresContext.Set<T>().Add(postgresEntity);
                     await _postgresContext.SaveChangesAsync();
                 }
-                
-                // Mark as synced in SQLite
+
                 entity.IsSynced = true;
                 await _sqliteContext.SaveChangesAsync();
             }
             catch
             {
-                // PostgreSQL failed, data remains in SQLite as unsynced
             }
         }
 
@@ -268,7 +249,6 @@ public class DatabaseManager
 
     public async Task DeleteAsync<T>(int id) where T : BaseEntity
     {
-        // Soft delete in SQLite
         var sqliteEntity = await _sqliteContext.Set<T>().FindAsync(id);
         if (sqliteEntity != null)
         {
@@ -276,7 +256,6 @@ public class DatabaseManager
             await _sqliteContext.SaveChangesAsync();
         }
 
-        // Try to delete from PostgreSQL if available
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
             try
@@ -286,8 +265,7 @@ public class DatabaseManager
                 {
                     postgresEntity.IsDeleted = true;
                     await _postgresContext.SaveChangesAsync();
-                    
-                    // Mark as synced in SQLite
+
                     if (sqliteEntity != null)
                     {
                         sqliteEntity.IsSynced = true;
@@ -297,7 +275,6 @@ public class DatabaseManager
             }
             catch
             {
-                // PostgreSQL failed, deletion remains in SQLite as unsynced
             }
         }
     }
@@ -322,7 +299,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -371,7 +347,7 @@ public class DatabaseManager
         {
             postgresEntry.State = EntityState.Detached;
         }
-        
+
         // Detach from SQLite context if tracked
         var sqliteEntry = _sqliteContext.Entry(entity);
         if (sqliteEntry.State != EntityState.Detached)
@@ -384,15 +360,15 @@ public class DatabaseManager
     {
         // Create a clean instance with only the essential properties (no navigation properties)
         var clonedEntity = Activator.CreateInstance<T>();
-        
+
         // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
-        
+
         foreach (var property in properties)
         {
             var value = property.GetValue(entity);
-            
+
             // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
@@ -409,17 +385,17 @@ public class DatabaseManager
                     value = DateTime.SpecifyKind(nullableDateTime.Value, DateTimeKind.Utc);
                 }
             }
-            
+
             property.SetValue(clonedEntity, value);
         }
-        
+
         // Ensure sync metadata is set (also convert to UTC)
-        clonedEntity.LastModified = entity.LastModified.Kind == DateTimeKind.Unspecified 
-            ? DateTime.SpecifyKind(entity.LastModified, DateTimeKind.Utc) 
+        clonedEntity.LastModified = entity.LastModified.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(entity.LastModified, DateTimeKind.Utc)
             : entity.LastModified;
         clonedEntity.SyncVersion = entity.SyncVersion;
         clonedEntity.IsSynced = true;
-        
+
         return clonedEntity;
     }
 
@@ -435,11 +411,11 @@ public class DatabaseManager
         // Copy all simple properties (not navigation properties) from source to target
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p) && p.Name != "Id");
-        
+
         foreach (var property in properties)
         {
             var value = property.GetValue(source);
-            
+
             // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
@@ -456,7 +432,7 @@ public class DatabaseManager
                     value = DateTime.SpecifyKind(nullableDateTime.Value, DateTimeKind.Utc);
                 }
             }
-            
+
             property.SetValue(target, value);
         }
     }

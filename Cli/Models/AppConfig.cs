@@ -6,10 +6,10 @@ public class AppConfig
 {
     public string? SessionToken { get; set; }
     public string? EncryptedConnectionString { get; set; }
-    
+
     private static readonly string ConfigFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-        "Tasker", 
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Tasker",
         "config.json");
 
     public static AppConfig Load()
@@ -25,9 +25,8 @@ public class AppConfig
         }
         catch
         {
-            // If any error occurs loading config, return default
         }
-        
+
         return new AppConfig();
     }
 
@@ -44,7 +43,6 @@ public class AppConfig
         }
         catch
         {
-            // Silently fail if we can't save config
         }
     }
 }

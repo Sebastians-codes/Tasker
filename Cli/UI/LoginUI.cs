@@ -2,8 +2,6 @@ using Spectre.Console;
 using Tasker.Cli.Services;
 using Tasker.Domain.Models;
 using Tasker.Cli.Models;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Tasker.Cli.UI;
 
@@ -15,8 +13,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
     public async Task<User?> ShowLoginAsync()
     {
         var config = AppConfig.Load();
-        
-        // Check for existing session
+
         if (!string.IsNullOrEmpty(config.SessionToken))
         {
             var (decryptedToken, tokenExpiry) = EncryptionService.DecryptToken(config.SessionToken);
@@ -33,8 +30,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                     return session.User;
                 }
             }
-            
-            // Session invalid, expired, from different machine, or old format - clear it
+
             config.SessionToken = null;
             config.Save();
         }
@@ -49,7 +45,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                 new SelectionPrompt<string>()
                     .AddChoices([
                         "Login",
-                        "Register", 
+                        "Register",
                         "Exit"
                     ]));
 
@@ -59,7 +55,6 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                     var loginResult = await HandleLoginAsync();
                     if (loginResult != null)
                     {
-                        // Create session with default settings
                         var session = await _sessionService.CreateSessionAsync(loginResult, 30, false);
                         config.SessionToken = EncryptionService.EncryptToken(session.Token, session.ExpiresAt);
                         config.Save();
@@ -87,7 +82,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                 .Secret());
 
         var user = await _userService.AuthenticateAsync(username, password);
-        
+
         if (user != null)
         {
             AnsiConsole.MarkupLine($"[green]Welcome back, {user.Username}![/]");
@@ -109,7 +104,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
         AnsiConsole.WriteLine();
 
         var username = AnsiConsole.Ask<string>("Username:");
-        
+
         if (await _userService.UsernameExistsAsync(username))
         {
             AnsiConsole.MarkupLine("[red]Username already exists.[/]");

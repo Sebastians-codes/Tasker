@@ -37,11 +37,10 @@ public static class ServiceContainer
 
         var loginUI = new LoginUI(userService, sessionService);
 
-        // Start initial sync: sync unsynced data TO PostgreSQL, then sync FROM PostgreSQL to SQLite
-        _ = Task.Run(async () => 
+        _ = Task.Run(async () =>
         {
-            await syncService.SyncToPostgresAsync();       // Send unsynced data TO PostgreSQL
-            await syncService.FullSyncFromPostgresAsync(); // Get latest data FROM PostgreSQL
+            await syncService.SyncToPostgresAsync();
+            await syncService.FullSyncFromPostgresAsync();
         });
 
         return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
@@ -65,17 +64,15 @@ public static class ServiceContainer
         var connectionMonitor = new ConnectionMonitor(postgresContext);
         var syncService = new SyncService(postgresContext, sqliteContext, connectionMonitor);
 
-        // Migrate databases
         try
         {
             postgresContext.Database.Migrate();
         }
         catch (Exception ex)
         {
-            // If PostgreSQL migration fails, we can still continue with SQLite
             Console.WriteLine($"PostgreSQL migration failed: {ex.Message}");
         }
-        
+
         try
         {
             sqliteContext.Database.Migrate();
@@ -92,12 +89,12 @@ public static class ServiceContainer
     private static string GetSqliteConnectionString()
     {
         var appDataPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Tasker");
-        
+
         if (!Directory.Exists(appDataPath))
             Directory.CreateDirectory(appDataPath);
-            
+
         var dbPath = Path.Combine(appDataPath, "tasker_local.db");
         return $"Data Source={dbPath}";
     }
@@ -107,14 +104,13 @@ public static class ServiceContainer
         try
         {
             var config = AppConfig.Load();
-            
+
             if (!string.IsNullOrEmpty(config.EncryptedConnectionString))
             {
                 var decryptedConnectionString = EncryptionService.DecryptConnectionString(config.EncryptedConnectionString);
-                
+
                 if (!string.IsNullOrEmpty(decryptedConnectionString))
                 {
-                    // Remove quotes if they were accidentally included
                     decryptedConnectionString = decryptedConnectionString.Trim('"', '\'');
                     return decryptedConnectionString;
                 }
@@ -122,10 +118,8 @@ public static class ServiceContainer
         }
         catch
         {
-            // If anything fails, fall back to design-time connection string
         }
 
-        // Use the same connection string as DesignTimeDbContextFactory for consistency
         return "Host=localhost;Database=tasker;Username=postgres;Password=password";
     }
 }

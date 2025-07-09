@@ -44,7 +44,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
     {
         var task = await _taskRepository.GetByIdAsync(id);
         if (task != null && _currentUser != null && task.UserId != _currentUser.Id)
-            return null; // User can only access their own tasks
+            return null;
 
         if (task != null)
         {
@@ -152,59 +152,4 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
 
     public async Task<bool> TaskExistsAsync(int taskId) =>
         await _taskRepository.ExistsAsync(taskId);
-
-    // public async Task EnsureSampleDataAsync()
-    // {
-    //     var tasks = await _taskRepository.GetAllAsync();
-    //     if (tasks.Any())
-    //         return;
-
-    //     var sampleTasks = new[]
-    //     {
-    //         new Tasks
-    //         {
-    //             Title = "Complete project documentation",
-    //             Description = "Write comprehensive documentation for the project",
-    //             P?riority = Priority.Important,
-    //             DueDate = DateTimeOffset.Now.AddDays(5),
-    //             AssignedTo = "John Doe",
-    //             TimeEstimateMinutes = 120,
-    //             Status = WorkStatus.Active
-    //         },
-    //         new Tasks
-    //         {
-    //             Title = "Fix critical bug",
-    //             Description = "Resolve issue with data persistence",
-    //             Priority = Priority.Urgent,
-    //             DueDate = DateTimeOffset.Now.AddDays(1),
-    //             AssignedTo = "Jane Smith",
-    //             TimeEstimateMinutes = 90,
-    //             Status = WorkStatus.Assigned
-    //         },
-    //         new Tasks
-    //         {
-    //             Title = "Implement new feature",
-    //             Description = "Add user authentication system",
-    //             Priority = Priority.Want,
-    //             DueDate = DateTimeOffset.Now.AddDays(10),
-    //             AssignedTo = "Bob Johnson",
-    //             TimeEstimateMinutes = 480,
-    //             Status = WorkStatus.Testing
-    //         },
-    //         new Tasks
-    //         {
-    //             Title = "Code review",
-    //             Description = "Review team's pull requests",
-    //             Priority = Priority.Wish,
-    //             DueDate = DateTimeOffset.Now.AddDays(3),
-    //             TimeEstimateMinutes = 45,
-    //             Status = WorkStatus.NotAssigned
-    //         }
-    //     };
-
-    //     foreach (var task in sampleTasks)
-    //         await _taskRepository.AddAsync(task);
-
-    //     await _taskRepository.SaveChangesAsync();
-    // }
 }
