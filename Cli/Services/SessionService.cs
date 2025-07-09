@@ -1,15 +1,21 @@
 using System.Security.Cryptography;
 using Tasker.Core.Interfaces;
 using Tasker.Domain.Models;
+using Tasker.Infrastructure.Data;
 
 namespace Tasker.Cli.Services;
 
-public class SessionService(IUserRepository userRepository)
+public class SessionService(IUserRepository userRepository, SyncService syncService)
 {
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly SyncService _syncService = syncService;
 
     public async Task<UserSession> CreateSessionAsync(User user, int durationDays, bool autoLoginEnabled)
     {
+        // Ensure user is synced to SQLite before creating session
+        // This prevents foreign key constraint violations when SQLite is fresh
+        await _syncService.FullSyncFromPostgresAsync(user.Id);
+
         var token = GenerateSecureToken();
         var machineId = MachineIdService.GetMachineId();
 

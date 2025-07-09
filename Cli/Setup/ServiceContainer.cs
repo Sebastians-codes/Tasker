@@ -20,7 +20,7 @@ public static class ServiceContainer
         var userRepository = new UserRepository(databaseManager);
 
         var userService = new UserService(userRepository);
-        var sessionService = new SessionService(userRepository);
+        var sessionService = new SessionService(userRepository, syncService);
         var taskService = new TaskService(taskRepository);
         var projectService = new ProjectService(projectRepository);
 
