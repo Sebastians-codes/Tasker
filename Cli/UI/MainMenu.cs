@@ -244,21 +244,27 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             switch (choice)
             {
                 case "Set Database Connection":
-                    await SetDatabaseConnectionAsync(config);
+                    var connectionChanged = await SetDatabaseConnectionAsync(config);
+                    if (connectionChanged)
+                    {
+                        await ShowRestartRequiredAndExit();
+                        return;
+                    }
                     break;
                 case "Remove Connection":
                     config.EncryptedConnectionString = null;
                     config.Save();
                     AnsiConsole.MarkupLine("[yellow]Database connection removed.[/]");
                     await Task.Delay(1500);
-                    break;
+                    await ShowRestartRequiredAndExit();
+                    return;
                 case "Back":
                     return;
             }
         }
     }
 
-    private async Task SetDatabaseConnectionAsync(AppConfig config)
+    private async Task<bool> SetDatabaseConnectionAsync(AppConfig config)
     {
         AnsiConsole.Clear();
         AnsiConsole.Write(new Rule("[cyan]Database Connection Setup[/]").LeftJustified());
@@ -276,7 +282,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         {
             AnsiConsole.MarkupLine("[red]Connection string cannot be empty.[/]");
             await Task.Delay(1500);
-            return;
+            return false;
         }
 
         AnsiConsole.MarkupLine("[blue]Testing database connection...[/]");
@@ -295,7 +301,7 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             {
                 AnsiConsole.MarkupLine("[red]Failed to encrypt connection string.[/]");
                 await Task.Delay(1500);
-                return;
+                return false;
             }
 
             config.EncryptedConnectionString = encryptedConnectionString;
@@ -304,16 +310,19 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
             AnsiConsole.MarkupLine("[green]✓ Database connection saved successfully![/]");
             AnsiConsole.MarkupLine("[dim]Connection string is encrypted and stored securely.[/]");
             AnsiConsole.WriteLine();
-            AnsiConsole.MarkupLine("[yellow]Note: The new connection will be used for future operations.[/]");
-            AnsiConsole.MarkupLine("[yellow]Existing database contexts will continue using the previous connection.[/]");
+            AnsiConsole.MarkupLine("[orange1]⚠️ Database settings have been changed.[/]");
+            AnsiConsole.MarkupLine("[orange1]⚠️ The application will now restart to apply the new settings.[/]");
+            AnsiConsole.MarkupLine("[orange1]⚠️ You will need to log in again.[/]");
+            
+            return true;
         }
         catch (Exception ex)
         {
             AnsiConsole.MarkupLine($"[red]✗ Failed to connect to database: {ex.Message}[/]");
             AnsiConsole.MarkupLine("[yellow]Connection string was not saved.[/]");
+            await Task.Delay(3000);
+            return false;
         }
-
-        await Task.Delay(3000);
     }
 
     private static string MaskConnectionString(string connectionString)
@@ -336,5 +345,18 @@ public class MainMenu(TaskMenu taskMenu, ProjectMenu projectMenu, SessionService
         }
 
         return "***configured***";
+    }
+
+    private async Task ShowRestartRequiredAndExit()
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new Rule("[red]Application Restart Required[/]").Centered());
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[red]The application will now shut down to apply the new database settings.[/]");
+        AnsiConsole.MarkupLine("[yellow]You will need to log in again.[/]");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[dim]Press any key to exit...[/]");
+        Console.ReadKey();
+        Environment.Exit(0);
     }
 }

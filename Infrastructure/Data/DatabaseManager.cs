@@ -209,7 +209,25 @@ public class DatabaseManager
         entity.IsSynced = false;
         entity.SyncVersion = Guid.NewGuid().ToString();
 
-        _sqliteContext.Set<T>().Update(entity);
+        // Find the existing entity in SQLite to ensure proper tracking
+        var existingSqliteEntity = await _sqliteContext.Set<T>()
+            .Where(e => e.Id == entity.Id && !e.IsDeleted)
+            .FirstOrDefaultAsync();
+
+        if (existingSqliteEntity != null)
+        {
+            // Update the existing entity's properties
+            UpdateEntityProperties(entity, existingSqliteEntity);
+            existingSqliteEntity.LastModified = entity.LastModified;
+            existingSqliteEntity.IsSynced = entity.IsSynced;
+            existingSqliteEntity.SyncVersion = entity.SyncVersion;
+        }
+        else
+        {
+            // Entity doesn't exist in SQLite, add it
+            _sqliteContext.Set<T>().Add(entity);
+        }
+
         await _sqliteContext.SaveChangesAsync();
 
         if (await _connectionMonitor.IsPostgresAvailableAsync())
@@ -236,7 +254,15 @@ public class DatabaseManager
                     await _postgresContext.SaveChangesAsync();
                 }
 
-                entity.IsSynced = true;
+                // Update the SQLite entity to mark as synced
+                if (existingSqliteEntity != null)
+                {
+                    existingSqliteEntity.IsSynced = true;
+                }
+                else
+                {
+                    entity.IsSynced = true;
+                }
                 await _sqliteContext.SaveChangesAsync();
             }
             catch
@@ -244,7 +270,7 @@ public class DatabaseManager
             }
         }
 
-        return entity;
+        return existingSqliteEntity ?? entity;
     }
 
     public async Task DeleteAsync<T>(Guid id) where T : BaseEntity
