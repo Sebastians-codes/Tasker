@@ -20,7 +20,7 @@ public class DatabaseManager
         _connectionMonitor = connectionMonitor;
     }
 
-    public async Task<T?> GetAsync<T>(int id) where T : BaseEntity
+    public async Task<T?> GetAsync<T>(Guid id) where T : BaseEntity
     {
         T? result = null;
 
@@ -95,7 +95,7 @@ public class DatabaseManager
             .ToListAsync();
     }
 
-    public async Task<Tasks?> GetTaskWithProjectAsync(int id)
+    public async Task<Tasks?> GetTaskWithProjectAsync(Guid id)
     {
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
@@ -143,7 +143,7 @@ public class DatabaseManager
             .ToListAsync();
     }
 
-    public async Task<Project?> GetProjectWithTasksAsync(int id)
+    public async Task<Project?> GetProjectWithTasksAsync(Guid id)
     {
         if (await _connectionMonitor.IsPostgresAvailableAsync())
         {
@@ -247,7 +247,7 @@ public class DatabaseManager
         return entity;
     }
 
-    public async Task DeleteAsync<T>(int id) where T : BaseEntity
+    public async Task DeleteAsync<T>(Guid id) where T : BaseEntity
     {
         var sqliteEntity = await _sqliteContext.Set<T>().FindAsync(id);
         if (sqliteEntity != null)
@@ -293,7 +293,7 @@ public class DatabaseManager
             try
             {
                 return await _postgresContext.Users
-                    .Where(x => !x.IsDeleted && x.Username == username)
+                    .Where(x => !x.IsDeleted && x.Username.ToLower() == username.ToLower())
                     .AsNoTracking()
                     .FirstOrDefaultAsync();
             }
@@ -303,7 +303,7 @@ public class DatabaseManager
         }
 
         return await _sqliteContext.Users
-            .Where(x => !x.IsDeleted && x.Username == username)
+            .Where(x => !x.IsDeleted && x.Username.ToLower() == username.ToLower())
             .AsNoTracking()
             .FirstOrDefaultAsync();
     }
@@ -312,6 +312,44 @@ public class DatabaseManager
     {
         var user = await GetUserByUsernameAsync(username);
         return user != null;
+    }
+
+    public async Task<bool> ProjectNameExistsAsync(string name, Guid userId)
+    {
+        if (await _connectionMonitor.IsPostgresAvailableAsync())
+        {
+            try
+            {
+                return await _postgresContext.Projects
+                    .AnyAsync(p => p.Name == name && p.OwnerId == userId && !p.IsDeleted);
+            }
+            catch
+            {
+                // Fall back to SQLite if PostgreSQL fails
+            }
+        }
+
+        return await _sqliteContext.Projects
+            .AnyAsync(p => p.Name == name && p.OwnerId == userId && !p.IsDeleted);
+    }
+
+    public async Task<bool> TaskNameExistsAsync(string title, Guid userId, Guid? projectId)
+    {
+        if (await _connectionMonitor.IsPostgresAvailableAsync())
+        {
+            try
+            {
+                return await _postgresContext.Tasks
+                    .AnyAsync(t => t.Title == title && t.UserId == userId && t.ProjectId == projectId && !t.IsDeleted);
+            }
+            catch
+            {
+                // Fall back to SQLite if PostgreSQL fails
+            }
+        }
+
+        return await _sqliteContext.Tasks
+            .AnyAsync(t => t.Title == title && t.UserId == userId && t.ProjectId == projectId && !t.IsDeleted);
     }
 
     public async Task<UserSession?> GetSessionByTokenAsync(string token)

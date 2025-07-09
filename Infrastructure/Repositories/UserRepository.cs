@@ -11,7 +11,7 @@ public class UserRepository(DatabaseManager databaseManager) : IUserRepository
     public async Task<IEnumerable<User>> GetAllAsync() =>
         await _databaseManager.GetAllAsync<User>();
 
-    public async Task<User?> GetByIdAsync(int id) =>
+    public async Task<User?> GetByIdAsync(Guid id) =>
         await _databaseManager.GetAsync<User>(id);
 
     public async Task<User?> GetByUsernameAsync(string username) =>
@@ -27,7 +27,7 @@ public class UserRepository(DatabaseManager databaseManager) : IUserRepository
         return await _databaseManager.UpdateAsync(user);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         try
         {
@@ -40,7 +40,7 @@ public class UserRepository(DatabaseManager databaseManager) : IUserRepository
         }
     }
 
-    public async Task<bool> ExistsAsync(int id)
+    public async Task<bool> ExistsAsync(Guid id)
     {
         var user = await _databaseManager.GetAsync<User>(id);
         return user != null;

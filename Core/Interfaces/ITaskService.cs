@@ -6,11 +6,12 @@ public interface ITaskService
 {
     void SetCurrentUser(User user);
     Task<IEnumerable<Tasks>> GetAllTasksAsync();
-    Task<Tasks?> GetTaskByIdAsync(int id);
-    Task<Tasks> CreateTaskAsync(string title, string description, Priority priority, DateTime? dueDate = null, string? assignedTo = null, int? timeEstimateMinutes = null, int? projectId = null, WorkStatus status = WorkStatus.NotAssigned);
+    Task<Tasks?> GetTaskByIdAsync(Guid id);
+    Task<Tasks> CreateTaskAsync(string title, string description, Priority priority, DateTime? dueDate = null, string? assignedTo = null, int? timeEstimateMinutes = null, Guid? projectId = null, WorkStatus status = WorkStatus.NotAssigned);
     Task<Tasks> UpdateTaskAsync(Tasks task);
-    Task<Tasks> UpdateTaskStatusAsync(int taskId, WorkStatus newStatus);
-    Task<bool> CompleteTaskAsync(int taskId);
-    Task<bool> DeleteTaskAsync(int taskId);
-    Task<bool> TaskExistsAsync(int taskId);
+    Task<Tasks> UpdateTaskStatusAsync(Guid taskId, WorkStatus newStatus);
+    Task<bool> CompleteTaskAsync(Guid taskId);
+    Task<bool> DeleteTaskAsync(Guid taskId);
+    Task<bool> TaskExistsAsync(Guid taskId);
+    Task<bool> TaskNameExistsAsync(string title, Guid? projectId);
 }

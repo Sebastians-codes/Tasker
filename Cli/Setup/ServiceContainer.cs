@@ -3,7 +3,6 @@ using Tasker.Infrastructure.Data;
 using Tasker.Infrastructure.Repositories;
 using Tasker.Cli.Services;
 using Tasker.Cli.UI;
-using Tasker.Cli.UI.Cli;
 using Tasker.Cli.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +10,7 @@ namespace Tasker.Cli.Setup;
 
 public static class ServiceContainer
 {
-    public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, ProjectCommands projectCommands, TaskCommands taskCommands, LoginUI loginUI, IUserService userService) CreateServices()
+    public static (MainMenu mainMenu, ITaskService taskService, IProjectService projectService, LoginUI loginUI, IUserService userService, SyncService syncService) CreateServices()
     {
         var (postgresContext, sqliteContext, connectionMonitor, syncService) = CreateDatabaseServices();
         var databaseManager = new DatabaseManager(postgresContext, sqliteContext, connectionMonitor);
@@ -31,19 +30,9 @@ public static class ServiceContainer
         var projectMenu = new ProjectMenu(projectService, projectDisplay, taskMenu, taskService, taskDisplay);
         var mainMenu = new MainMenu(taskMenu, projectMenu, sessionService);
 
-        var projectCommands = new ProjectCommands(projectDisplay, projectRepository, projectMenu);
-
-        var taskCommands = new TaskCommands(taskDisplay, taskRepository, taskMenu);
-
         var loginUI = new LoginUI(userService, sessionService);
 
-        _ = Task.Run(async () =>
-        {
-            await syncService.SyncToPostgresAsync();
-            await syncService.FullSyncFromPostgresAsync();
-        });
-
-        return (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, userService);
+        return (mainMenu, taskService, projectService, loginUI, userService, syncService);
     }
 
     public static (PostgresDbContext postgresContext, SqliteDbContext sqliteContext, IConnectionMonitor connectionMonitor, SyncService syncService) CreateDatabaseServices()

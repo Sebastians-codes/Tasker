@@ -29,7 +29,8 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .HasForeignKey(t => t.ProjectId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasIndex(p => p.Name);
+        builder.HasIndex(p => new { p.Name, p.OwnerId })
+            .IsUnique();
         builder.HasIndex(p => p.Priority);
         builder.HasIndex(p => p.CreatedOn);
         

@@ -2,7 +2,7 @@ namespace Tasker.Domain.Models;
 
 public abstract class BaseEntity
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
     public bool IsSynced { get; set; } = false;
     public string? SyncVersion { get; set; }

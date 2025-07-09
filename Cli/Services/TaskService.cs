@@ -40,7 +40,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
                    .ThenBy(t => t.DueDate ?? DateTimeOffset.MaxValue);
     }
 
-    public async Task<Tasks?> GetTaskByIdAsync(int id)
+    public async Task<Tasks?> GetTaskByIdAsync(Guid id)
     {
         var task = await _taskRepository.GetByIdAsync(id);
         if (task != null && _currentUser != null && task.UserId != _currentUser.Id)
@@ -71,11 +71,13 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             DateTime? dueDate = null,
             string? assignedTo = null,
             int? timeEstimateMinutes = null,
-            int? projectId = null,
+            Guid? projectId = null,
             WorkStatus status =
             WorkStatus.NotAssigned
     )
     {
+        var currentUserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set");
+
         if (!string.IsNullOrWhiteSpace(assignedTo) && status == WorkStatus.NotAssigned)
             status = WorkStatus.Assigned;
 
@@ -89,7 +91,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             TimeEstimateMinutes = timeEstimateMinutes,
             Status = status,
             ProjectId = projectId,
-            UserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set")
+            UserId = currentUserId
         };
 
         await _taskRepository.AddAsync(task);
@@ -114,7 +116,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
             task.Status = WorkStatus.NotAssigned;
     }
 
-    public async Task<Tasks> UpdateTaskStatusAsync(int taskId, WorkStatus newStatus)
+    public async Task<Tasks> UpdateTaskStatusAsync(Guid taskId, WorkStatus newStatus)
     {
         var task = await _taskRepository.GetByIdAsync(taskId);
         if (task == null)
@@ -127,7 +129,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
         return task;
     }
 
-    public async Task<bool> CompleteTaskAsync(int taskId)
+    public async Task<bool> CompleteTaskAsync(Guid taskId)
     {
         var task = await _taskRepository.GetByIdAsync(taskId);
         if (task == null || task.CompletedOn != default)
@@ -141,7 +143,7 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
         return true;
     }
 
-    public async Task<bool> DeleteTaskAsync(int taskId)
+    public async Task<bool> DeleteTaskAsync(Guid taskId)
     {
         var deleted = await _taskRepository.DeleteAsync(taskId);
         if (deleted)
@@ -150,6 +152,12 @@ public class TaskService(ITaskRepository taskRepository) : ITaskService
         return deleted;
     }
 
-    public async Task<bool> TaskExistsAsync(int taskId) =>
+    public async Task<bool> TaskExistsAsync(Guid taskId) =>
         await _taskRepository.ExistsAsync(taskId);
+
+    public async Task<bool> TaskNameExistsAsync(string title, Guid? projectId)
+    {
+        var currentUserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set");
+        return await _taskRepository.TaskNameExistsAsync(title, currentUserId, projectId);
+    }
 }

@@ -21,7 +21,7 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
                       .ThenBy(p => p.CreatedOn);
     }
 
-    public async Task<Project?> GetProjectByIdAsync(int id)
+    public async Task<Project?> GetProjectByIdAsync(Guid id)
     {
         var project = await _projectRepository.GetByIdAsync(id);
         if (project != null && _currentUser != null && project.OwnerId != _currentUser.Id)
@@ -31,12 +31,14 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
 
     public async Task<Project> CreateProjectAsync(string name, string description, Priority priority)
     {
+        var currentUserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set");
+
         var project = new Project
         {
             Name = name,
             Description = description,
             Priority = priority,
-            OwnerId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set")
+            OwnerId = currentUserId
         };
 
         await _projectRepository.AddAsync(project);
@@ -51,7 +53,7 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
         return project;
     }
 
-    public async Task<bool> DeleteProjectAsync(int projectId)
+    public async Task<bool> DeleteProjectAsync(Guid projectId)
     {
         var deleted = await _projectRepository.DeleteAsync(projectId);
         if (deleted)
@@ -59,7 +61,13 @@ public class ProjectService(IProjectRepository projectRepository) : IProjectServ
         return deleted;
     }
 
-    public async Task<bool> ProjectExistsAsync(int projectId) =>
+    public async Task<bool> ProjectExistsAsync(Guid projectId) =>
         await _projectRepository.ExistsAsync(projectId);
+
+    public async Task<bool> ProjectNameExistsAsync(string name)
+    {
+        var currentUserId = _currentUser?.Id ?? throw new InvalidOperationException("Current user not set");
+        return await _projectRepository.ProjectNameExistsAsync(name, currentUserId);
+    }
 
 }

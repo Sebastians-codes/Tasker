@@ -9,7 +9,7 @@ public class Project : BaseEntity
     public DateTime UpdatedOn { get; set; }
     public DateTime CompletedOn { get; set; }
 
-    public int OwnerId { get; set; }
+    public Guid OwnerId { get; set; }
     public User Owner { get; set; } = null!;
 
     public List<Tasks> Tasks = [];

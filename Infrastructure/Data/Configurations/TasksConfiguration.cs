@@ -46,6 +46,8 @@ public class TasksConfiguration : IEntityTypeConfiguration<Tasks>
             .HasForeignKey(t => t.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasIndex(t => new { t.Title, t.ProjectId, t.UserId })
+            .IsUnique();
         builder.HasIndex(t => t.ProjectId);
         builder.HasIndex(t => t.UserId);
         builder.HasIndex(t => t.Priority);

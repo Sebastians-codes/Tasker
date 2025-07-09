@@ -26,12 +26,12 @@ public class SyncService
     {
         if (isConnected)
         {
-            // PostgreSQL is back online, sync unsynced data
+            // PostgreSQL is back online, sync unsynced data (all users)
             await SyncToPostgresAsync();
         }
     }
 
-    public async Task SyncToPostgresAsync()
+    public async Task SyncToPostgresAsync(Guid? userId = null)
     {
         if (!await _connectionMonitor.IsPostgresAvailableAsync())
         {
@@ -43,11 +43,11 @@ public class SyncService
             // Check if PostgreSQL is empty and reset sync status if needed
             await CheckAndResetSyncStatusAsync();
             
-            // Sync in dependency order: Users first, then Projects, then Tasks
-            // UserSessions are machine-specific and should not be synced
-            await SyncEntities<User>();
-            await SyncEntities<Project>();
-            await SyncEntities<Tasks>();
+            // Sync in dependency order: Users first, then Projects, then Tasks, then UserSessions
+            await SyncUsers(userId);
+            await SyncProjects(userId);
+            await SyncTasks(userId);
+            await SyncUserSessions(userId);
         }
         catch (Exception ex)
         {
@@ -58,17 +58,19 @@ public class SyncService
 
     private async Task CheckAndResetSyncStatusAsync()
     {
-        // Check if PostgreSQL is empty (no users, projects, or tasks)
+        // Check if PostgreSQL is empty (no users, projects, tasks, or user sessions)
         var userCount = await _postgresContext.Users.CountAsync(x => !x.IsDeleted);
         var projectCount = await _postgresContext.Projects.CountAsync(x => !x.IsDeleted);
         var taskCount = await _postgresContext.Tasks.CountAsync(x => !x.IsDeleted);
+        var sessionCount = await _postgresContext.UserSessions.CountAsync(x => !x.IsDeleted);
         
-        if (userCount == 0 && projectCount == 0 && taskCount == 0)
+        if (userCount == 0 && projectCount == 0 && taskCount == 0 && sessionCount == 0)
         {
             // Reset sync status for all entities in SQLite
             await ResetSyncStatus<User>();
             await ResetSyncStatus<Project>();
             await ResetSyncStatus<Tasks>();
+            await ResetSyncStatus<UserSession>();
         }
     }
 
@@ -89,34 +91,6 @@ public class SyncService
         }
     }
 
-    private async Task SyncEntities<T>() where T : BaseEntity
-    {
-        var unsyncedEntities = await _sqliteContext.Set<T>()
-            .Where(x => !x.IsSynced)
-            .ToListAsync();
-
-        foreach (var entity in unsyncedEntities)
-        {
-            try
-            {
-                await SyncEntity(entity);
-                
-                // Mark as synced in SQLite
-                entity.IsSynced = true;
-                await _sqliteContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to sync {typeof(T).Name} with ID {entity.Id}: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
-                }
-                // Skip this entity and continue with others
-                continue;
-            }
-        }
-    }
 
     private async Task SyncEntity<T>(T entity) where T : BaseEntity
     {
@@ -214,7 +188,7 @@ public class SyncService
     private bool IsNavigationProperty(System.Reflection.PropertyInfo property)
     {
         // Skip navigation properties that would cause tracking conflicts
-        var navigationPropertyNames = new[] { "User", "Project", "Owner", "Tasks", "Projects" };
+        var navigationPropertyNames = new[] { "User", "Project", "Owner", "Tasks", "Projects", "UserSessions" };
         return navigationPropertyNames.Contains(property.Name);
     }
 
@@ -248,51 +222,209 @@ public class SyncService
         }
     }
 
-    public async Task FullSyncFromPostgresAsync()
+    public async Task FullSyncFromPostgresAsync(Guid? userId = null)
     {
         if (!await _connectionMonitor.IsPostgresAvailableAsync())
             return;
 
         try
         {
-            // Sync from PostgreSQL: Users first, then Projects, then Tasks
-            // UserSessions are machine-specific and should not be synced
-            await SyncFromPostgres<User>();
-            await SyncFromPostgres<Project>();
-            await SyncFromPostgres<Tasks>();
+            // Sync from PostgreSQL: Users first, then Projects, then Tasks, then UserSessions
+            await SyncUsersFromPostgres(userId);
+            await SyncProjectsFromPostgres(userId);
+            await SyncTasksFromPostgres(userId);
+            await SyncUserSessionsFromPostgres(userId);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Full sync failed: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+            }
         }
     }
 
-    private async Task SyncFromPostgres<T>() where T : BaseEntity
+
+    private async Task SyncUsers(Guid? userId)
     {
-        var postgresEntities = await _postgresContext.Set<T>()
-            .Where(x => !x.IsDeleted)
-            .ToListAsync();
-
-        foreach (var entity in postgresEntities)
+        var query = _sqliteContext.Users.Where(x => !x.IsSynced);
+        if (userId.HasValue)
+            query = query.Where(x => x.Id == userId.Value);
+        
+        var users = await query.ToListAsync();
+        foreach (var user in users)
         {
-            var sqliteEntity = await _sqliteContext.Set<T>()
-                .FirstOrDefaultAsync(x => x.Id == entity.Id);
-
-            if (sqliteEntity == null)
+            try
             {
-                // Entity doesn't exist in SQLite, add it
-                var newEntity = CloneEntityForSqlite(entity);
-                newEntity.IsSynced = true;
-                _sqliteContext.Set<T>().Add(newEntity);
+                await SyncEntity(user);
+                user.IsSynced = true;
+                await _sqliteContext.SaveChangesAsync();
             }
-            else if (entity.LastModified > sqliteEntity.LastModified)
+            catch (Exception ex)
             {
-                // PostgreSQL has newer version, update SQLite
-                CopyEntityProperties(entity, sqliteEntity);
-                sqliteEntity.IsSynced = true;
+                Console.WriteLine($"Failed to sync User with ID {user.Id}: {ex.Message}");
+                // Clear change trackers and continue with next entity
+                _postgresContext.ChangeTracker.Clear();
+                _sqliteContext.ChangeTracker.Clear();
+                continue;
             }
         }
+    }
 
+    private async Task SyncProjects(Guid? userId)
+    {
+        var query = _sqliteContext.Projects.Where(x => !x.IsSynced);
+        if (userId.HasValue)
+            query = query.Where(x => x.OwnerId == userId.Value);
+        
+        var projects = await query.ToListAsync();
+        foreach (var project in projects)
+        {
+            try
+            {
+                await SyncEntity(project);
+                project.IsSynced = true;
+                await _sqliteContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to sync Project with ID {project.Id}: {ex.Message}");
+                // Clear change trackers and continue with next entity
+                _postgresContext.ChangeTracker.Clear();
+                _sqliteContext.ChangeTracker.Clear();
+                continue;
+            }
+        }
+    }
+
+    private async Task SyncTasks(Guid? userId)
+    {
+        var query = _sqliteContext.Tasks.Where(x => !x.IsSynced);
+        if (userId.HasValue)
+            query = query.Where(x => x.UserId == userId.Value);
+        
+        var tasks = await query.ToListAsync();
+        foreach (var task in tasks)
+        {
+            await SyncEntity(task);
+            task.IsSynced = true;
+            await _sqliteContext.SaveChangesAsync();
+        }
+    }
+
+    private async Task SyncUserSessions(Guid? userId)
+    {
+        var query = _sqliteContext.UserSessions.Where(x => !x.IsSynced);
+        if (userId.HasValue)
+            query = query.Where(x => x.UserId == userId.Value);
+        
+        var sessions = await query.ToListAsync();
+        foreach (var session in sessions)
+        {
+            await SyncEntity(session);
+            session.IsSynced = true;
+            await _sqliteContext.SaveChangesAsync();
+        }
+    }
+
+    private async Task SyncUsersFromPostgres(Guid? userId)
+    {
+        var query = _postgresContext.Users.Where(x => !x.IsDeleted);
+        if (userId.HasValue)
+            query = query.Where(x => x.Id == userId.Value);
+        
+        var users = await query.ToListAsync();
+        foreach (var user in users)
+        {
+            var sqliteUser = await _sqliteContext.Users.FirstOrDefaultAsync(x => x.Id == user.Id);
+            if (sqliteUser == null)
+            {
+                var newUser = CloneEntityForSqlite(user);
+                newUser.IsSynced = true;
+                _sqliteContext.Users.Add(newUser);
+            }
+            else if (user.LastModified > sqliteUser.LastModified)
+            {
+                CopyEntityProperties(user, sqliteUser);
+                sqliteUser.IsSynced = true;
+            }
+        }
+        await _sqliteContext.SaveChangesAsync();
+    }
+
+    private async Task SyncProjectsFromPostgres(Guid? userId)
+    {
+        var query = _postgresContext.Projects.Where(x => !x.IsDeleted);
+        if (userId.HasValue)
+            query = query.Where(x => x.OwnerId == userId.Value);
+        
+        var projects = await query.ToListAsync();
+        foreach (var project in projects)
+        {
+            var sqliteProject = await _sqliteContext.Projects.FirstOrDefaultAsync(x => x.Id == project.Id);
+            if (sqliteProject == null)
+            {
+                var newProject = CloneEntityForSqlite(project);
+                newProject.IsSynced = true;
+                _sqliteContext.Projects.Add(newProject);
+            }
+            else if (project.LastModified > sqliteProject.LastModified)
+            {
+                CopyEntityProperties(project, sqliteProject);
+                sqliteProject.IsSynced = true;
+            }
+        }
+        await _sqliteContext.SaveChangesAsync();
+    }
+
+    private async Task SyncTasksFromPostgres(Guid? userId)
+    {
+        var query = _postgresContext.Tasks.Where(x => !x.IsDeleted);
+        if (userId.HasValue)
+            query = query.Where(x => x.UserId == userId.Value);
+        
+        var tasks = await query.ToListAsync();
+        foreach (var task in tasks)
+        {
+            var sqliteTask = await _sqliteContext.Tasks.FirstOrDefaultAsync(x => x.Id == task.Id);
+            if (sqliteTask == null)
+            {
+                var newTask = CloneEntityForSqlite(task);
+                newTask.IsSynced = true;
+                _sqliteContext.Tasks.Add(newTask);
+            }
+            else if (task.LastModified > sqliteTask.LastModified)
+            {
+                CopyEntityProperties(task, sqliteTask);
+                sqliteTask.IsSynced = true;
+            }
+        }
+        await _sqliteContext.SaveChangesAsync();
+    }
+
+    private async Task SyncUserSessionsFromPostgres(Guid? userId)
+    {
+        var query = _postgresContext.UserSessions.Where(x => !x.IsDeleted);
+        if (userId.HasValue)
+            query = query.Where(x => x.UserId == userId.Value);
+        
+        var sessions = await query.ToListAsync();
+        foreach (var session in sessions)
+        {
+            var sqliteSession = await _sqliteContext.UserSessions.FirstOrDefaultAsync(x => x.Id == session.Id);
+            if (sqliteSession == null)
+            {
+                var newSession = CloneEntityForSqlite(session);
+                newSession.IsSynced = true;
+                _sqliteContext.UserSessions.Add(newSession);
+            }
+            else if (session.LastModified > sqliteSession.LastModified)
+            {
+                CopyEntityProperties(session, sqliteSession);
+                sqliteSession.IsSynced = true;
+            }
+        }
         await _sqliteContext.SaveChangesAsync();
     }
 }

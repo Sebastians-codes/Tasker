@@ -15,7 +15,6 @@ public class TaskDisplay
         };
         table.Centered();
 
-        table.AddColumn("[rgb(190,140,150)]ID[/]");
         table.AddColumn("[rgb(190,140,150)]Title[/]");
         table.AddColumn("[rgb(190,140,150)]Priority[/]");
         table.AddColumn("[rgb(190,140,150)]Status[/]");
@@ -29,13 +28,12 @@ public class TaskDisplay
         {
             var priorityColor = GetPriorityColor(task.Priority);
             var statusColor = GetStatusColor(task.Status);
-            var dueDateText = task.DueDate?.ToString("yy/MM/dd") ?? "No due date";
-            var projectText = task.Project != null ? $"#{task.Project.Id}: {task.Project.Name}" : "[dim]No project[/]";
+            var dueDateText = task.DueDate?.ToString("yyyy/MM/dd") ?? "No due date";
+            var projectText = task.Project != null ? task.Project.Name : "[dim]No project[/]";
             var timeEstimateText = FormatTimeEstimate(task.TimeEstimateMinutes);
             var actualTimeText = TimeTrackingService.FormatActualTime(task);
 
             table.AddRow(
-                task.Id.ToString(),
                 task.Title,
                 $"{priorityColor}{task.Priority}[/]",
                 $"{statusColor}{task.Status}[/]",
@@ -54,12 +52,12 @@ public class TaskDisplay
     {
         var assignedToText = !string.IsNullOrEmpty(task.AssignedTo) ? $"[rgb(182,196,220)]Assigned to:[/] {task.AssignedTo}\n" : "";
         var dueDateText = task.DueDate.HasValue ? $"[rgb(182,196,220)]Due:[/] {task.DueDate:yyyy/MM/dd}\n" : "";
-        var projectText = task.Project != null ? $"[rgb(182,196,220)]Project:[/] #{task.Project.Id}: {task.Project.Name}\n" : "";
+        var projectText = task.Project != null ? $"[rgb(182,196,220)]Project:[/] {task.Project.Name}\n" : "";
         var timeTrackingText = $"[rgb(182,196,220)]Time tracking:[/] {TimeTrackingService.GetTimeTrackingStatus(task)}\n";
         var actualTimeText = $"[rgb(182,196,220)]Actual time:[/] {TimeTrackingService.FormatActualTime(task)}\n";
 
-        var panel = new Panel($"[rgb(222,185,149)]{task.Title}[/]\n\n{task.Description}\n\n{assignedToText}{dueDateText}{projectText}{timeTrackingText}{actualTimeText}[rgb(140,140,140)]Created: {task.CreatedOn:yy/MM/dd}[/]")
-            .Header($"[rgb(190,140,150)]Task #{task.Id}[/]")
+        var panel = new Panel($"[rgb(222,185,149)]{task.Title}[/]\n\n{task.Description}\n\n{assignedToText}{dueDateText}{projectText}{timeTrackingText}{actualTimeText}[rgb(140,140,140)]Created: {task.CreatedOn:yyyy/MM/dd}[/]")
+            .Header($"[rgb(190,140,150)]Task Details[/]")
             .Border(BoxBorder.Rounded)
             .Padding(2, 1);
 
@@ -90,22 +88,75 @@ public class TaskDisplay
         };
     }
 
+    public static string FormatTimeMinutes(int totalMinutes)
+    {
+        if (totalMinutes == 0)
+            return "0min";
+            
+        if (totalMinutes < 60)
+            return $"{totalMinutes}min";
+
+        var parts = new List<string>();
+        
+        // Calculate years (assuming 365 days per year, 8 hours per day)
+        var minutesPerYear = 365 * 24 * 60;
+        if (totalMinutes >= minutesPerYear)
+        {
+            var years = totalMinutes / minutesPerYear;
+            parts.Add($"{years}y");
+            totalMinutes %= minutesPerYear;
+        }
+        
+        // Calculate months (assuming 30 days per month, 8 hours per day)
+        var minutesPerMonth = 30 * 24 * 60;
+        if (totalMinutes >= minutesPerMonth)
+        {
+            var months = totalMinutes / minutesPerMonth;
+            parts.Add($"{months}mo");
+            totalMinutes %= minutesPerMonth;
+        }
+        
+        // Calculate weeks
+        var minutesPerWeek = 7 * 24 * 60;
+        if (totalMinutes >= minutesPerWeek)
+        {
+            var weeks = totalMinutes / minutesPerWeek;
+            parts.Add($"{weeks}w");
+            totalMinutes %= minutesPerWeek;
+        }
+        
+        // Calculate days
+        var minutesPerDay = 24 * 60;
+        if (totalMinutes >= minutesPerDay)
+        {
+            var days = totalMinutes / minutesPerDay;
+            parts.Add($"{days}d");
+            totalMinutes %= minutesPerDay;
+        }
+        
+        // Calculate hours
+        if (totalMinutes >= 60)
+        {
+            var hours = totalMinutes / 60;
+            parts.Add($"{hours}h");
+            totalMinutes %= 60;
+        }
+        
+        // Calculate remaining minutes
+        if (totalMinutes > 0)
+        {
+            parts.Add($"{totalMinutes}m");
+        }
+        
+        return string.Join(" ", parts);
+    }
+
     private static string FormatTimeEstimate(int? timeEstimateMinutes)
     {
         if (!timeEstimateMinutes.HasValue)
             return "[dim]No estimate[/]";
 
-        var totalMinutes = timeEstimateMinutes.Value;
-        if (totalMinutes < 60)
-            return $"{totalMinutes}min";
-
-        var hours = totalMinutes / 60;
-        var remainingMinutes = totalMinutes % 60;
-
-        if (remainingMinutes == 0)
-            return $"{hours}h";
-
-        return $"{hours}h {remainingMinutes}m";
+        return FormatTimeMinutes(timeEstimateMinutes.Value);
     }
 
     private static string GetStatusColor(WorkStatus status)

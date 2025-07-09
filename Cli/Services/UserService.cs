@@ -65,7 +65,7 @@ public class UserService(IUserRepository userRepository) : IUserService
     public async Task<bool> UsernameExistsAsync(string username) =>
         await _userRepository.UsernameExistsAsync(username);
 
-    public async Task<User?> GetByIdAsync(int id) =>
+    public async Task<User?> GetByIdAsync(Guid id) =>
         await _userRepository.GetByIdAsync(id);
 
     public async Task<User?> GetByUsernameAsync(string username) =>

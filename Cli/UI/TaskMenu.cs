@@ -86,7 +86,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         var selectedTask = AnsiConsole.Prompt(
             new SelectionPrompt<Tasks>()
                 .Title("Select a task to view:")
-                .UseConverter(task => $"{task.Id}: {task.Title}")
+                .UseConverter(task => task.Project != null ? $"{task.Title} ({task.Project.Name})" : task.Title)
                 .AddChoices(tasks));
 
         AnsiConsole.Clear();
@@ -105,7 +105,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         var taskToComplete = AnsiConsole.Prompt(
             new SelectionPrompt<Tasks>()
                 .Title("Select a task to mark as complete:")
-                .UseConverter(task => $"{task.Id}: {task.Title}")
+                .UseConverter(task => task.Project != null ? $"{task.Title} ({task.Project.Name})" : task.Title)
                 .AddChoices(incompleteTasks));
 
         await _taskService.CompleteTaskAsync(taskToComplete.Id);
@@ -114,17 +114,65 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
 
     public async Task AddNewTaskAsync()
     {
-        var title = AnsiConsole.Ask<string>("Enter task title:");
-        var description = AnsiConsole.Ask<string>("Enter task description:");
+        Guid? projectId = null;
+        var projects = (await _projectService.GetAllProjectsAsync()).ToList();
+        if (projects.Count > 0)
+        {
+            var projectChoices = new List<string> { "No project" };
+            projectChoices.AddRange(projects.Select(p => p.Name));
+
+            var selectedProject = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("Select project (optional):")
+                    .AddChoices(projectChoices));
+
+            if (selectedProject != "No project")
+            {
+                var project = projects.First(p => p.Name == selectedProject);
+                projectId = project.Id;
+            }
+        }
+
+        // Get task title with validation first
+        string? title;
+        while (true)
+        {
+            title = InputParser.GetInputWithEscapeHandling("Enter task title");
+            
+            // Check for ESC cancellation
+            if (title == null)
+            {
+                _display.ShowErrorMessage("Task creation cancelled.");
+                return;
+            }
+            
+            // Check if task name already exists in this project context
+            if (await _taskService.TaskNameExistsAsync(title, projectId))
+            {
+                var projectContext = projectId.HasValue ? "in this project" : "without a project";
+                _display.ShowErrorMessage($"A task with the title '{title}' already exists {projectContext}. Please choose a different title.");
+                continue;
+            }
+            break;
+        }
+
+        var description = InputParser.GetInputWithEscapeHandling("Enter task description", allowEmpty: true);
+
+        if (description == null)
+        {
+            _display.ShowErrorMessage("Task creation cancelled.");
+            return;
+        }
+
         var priority = AnsiConsole.Prompt(
             new SelectionPrompt<Priority>()
-                .Title("Select priority:")
+                .Title("Select priority (ESC to cancel):")
                 .AddChoices(Enum.GetValues<Priority>()));
 
         DateTime? dueDate = null;
         if (AnsiConsole.Confirm("Set due date?"))
         {
-            var dateInput = AnsiConsole.Ask<string>("Enter due date (MM/dd or yyyy-MM-dd):");
+            var dateInput = AnsiConsole.Ask<string>("Enter due date (dd/MM or yyyy-MM-dd):");
             dueDate = InputParser.ParseDate(dateInput);
             if (dueDate == null)
                 _display.ShowErrorMessage("Invalid date format. Task will be created without due date.");
@@ -143,24 +191,6 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 _display.ShowErrorMessage("Invalid time format. Task will be created without time estimate.");
         }
 
-        int? projectId = null;
-        var projects = (await _projectService.GetAllProjectsAsync()).ToList();
-        if (projects.Count > 0)
-        {
-            var projectChoices = new List<string> { "No project" };
-            projectChoices.AddRange(projects.Select(p => $"#{p.Id}: {p.Name}"));
-
-            var selectedProject = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("Select project (optional):")
-                    .AddChoices(projectChoices));
-
-            if (selectedProject != "No project")
-            {
-                projectId = int.Parse(selectedProject.Split(':')[0].TrimStart('#'));
-            }
-        }
-
         await _taskService.CreateTaskAsync(title, description, priority, dueDate, assignedTo, timeEstimate, projectId);
         _display.ShowSuccessMessage($"Task '{title}' added successfully!");
     }
@@ -176,7 +206,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         var taskToUpdate = AnsiConsole.Prompt(
             new SelectionPrompt<Tasks>()
                 .Title("Select a task to update:")
-                .UseConverter(task => $"{task.Id}: {task.Title}")
+                .UseConverter(task => task.Project != null ? $"{task.Title} ({task.Project.Name})" : task.Title)
                 .AddChoices(tasks));
 
         var fieldToUpdate = AnsiConsole.Prompt(
@@ -234,7 +264,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
             case "Due Date":
                 if (AnsiConsole.Confirm("Set due date?"))
                 {
-                    var dateInput = AnsiConsole.Ask<string>("Enter due date (MM/dd or yyyy-MM-dd):");
+                    var dateInput = AnsiConsole.Ask<string>("Enter due date (dd/MM or yyyy-MM-dd):");
                     var parsedDate = InputParser.ParseDate(dateInput);
                     if (parsedDate != null)
                         taskToUpdate.DueDate = parsedDate;
@@ -248,7 +278,7 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 var projects = (await _projectService.GetAllProjectsAsync()).ToList();
 
                 var projectChoices = new List<string> { "No project" };
-                projectChoices.AddRange(projects.Select(p => $"#{p.Id}: {p.Name}"));
+                projectChoices.AddRange(projects.Select(p => p.Name));
 
                 var selectedProject = AnsiConsole.Prompt(
                     new SelectionPrompt<string>()
@@ -262,9 +292,9 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 }
                 else
                 {
-                    var projectId = int.Parse(selectedProject.Split(':')[0].TrimStart('#'));
-                    taskToUpdate.ProjectId = projectId;
-                    taskToUpdate.Project = projects.First(p => p.Id == projectId);
+                    var project = projects.First(p => p.Name == selectedProject);
+                    taskToUpdate.ProjectId = project.Id;
+                    taskToUpdate.Project = project;
                 }
                 break;
             case "Assigned To":
@@ -311,10 +341,14 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         var taskToDelete = AnsiConsole.Prompt(
             new SelectionPrompt<Tasks>()
                 .Title("Select a task to delete:")
-                .UseConverter(task => $"{task.Id}: {task.Title}")
+                .UseConverter(task => task.Project != null ? $"{task.Title} ({task.Project.Name})" : task.Title)
                 .AddChoices(tasks));
 
-        if (AnsiConsole.Confirm($"Are you sure you want to delete '{taskToDelete.Title}'?"))
+        var deleteMessage = taskToDelete.Project != null 
+            ? $"Are you sure you want to delete '{taskToDelete.Title}' in project '{taskToDelete.Project.Name}'?"
+            : $"Are you sure you want to delete '{taskToDelete.Title}'?";
+        
+        if (AnsiConsole.Confirm(deleteMessage))
         {
             await _taskService.DeleteTaskAsync(taskToDelete.Id);
             _display.ShowErrorMessage($"Task '{taskToDelete.Title}' deleted!");

@@ -4,7 +4,7 @@ using Tasker.Cli.UI;
 if (!await SetupUI.EnsureDatabaseConfiguredAsync())
     return;
 
-var (mainMenu, taskService, projectService, projectCommands, taskCommands, loginUI, _) = ServiceContainer.CreateServices();
+var (mainMenu, taskService, projectService, loginUI, _, syncService) = ServiceContainer.CreateServices();
 
 var currentUser = await loginUI.ShowLoginAsync();
 if (currentUser == null)
@@ -13,12 +13,11 @@ if (currentUser == null)
 taskService.SetCurrentUser(currentUser);
 projectService.SetCurrentUser(currentUser);
 
-if (args.Length > 0)
+// Sync data after successful login
+_ = Task.Run(async () =>
 {
-    if (args[0].StartsWith('p'))
-        await projectCommands.Router(args);
-    else
-        await taskCommands.Router(args);
-}
-else
-    await mainMenu.ShowMenuAsync();
+    await syncService.SyncToPostgresAsync(currentUser.Id);
+    await syncService.FullSyncFromPostgresAsync(currentUser.Id);
+});
+
+await mainMenu.ShowMenuAsync();

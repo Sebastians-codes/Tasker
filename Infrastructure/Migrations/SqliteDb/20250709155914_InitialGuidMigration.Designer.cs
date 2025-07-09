@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tasker.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using Tasker.Infrastructure.Data;
 namespace Infrastructure.Migrations.SqliteDb
 {
     [DbContext(typeof(SqliteDbContext))]
-    partial class SqliteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250709155914_InitialGuidMigration")]
+    partial class InitialGuidMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
@@ -66,12 +69,11 @@ namespace Infrastructure.Migrations.SqliteDb
 
                     b.HasIndex("CreatedOn");
 
+                    b.HasIndex("Name");
+
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("Priority");
-
-                    b.HasIndex("Name", "OwnerId")
-                        .IsUnique();
 
                     b.ToTable("Projects");
                 });
@@ -162,9 +164,6 @@ namespace Infrastructure.Migrations.SqliteDb
                     b.HasIndex("Status");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("Title", "ProjectId", "UserId")
-                        .IsUnique();
 
                     b.ToTable("Tasks");
                 });

@@ -11,7 +11,7 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
     public async Task<IEnumerable<Tasks>> GetAllAsync() =>
         await _databaseManager.GetAllTasksWithProjectAsync();
 
-    public async Task<Tasks?> GetByIdAsync(int id) =>
+    public async Task<Tasks?> GetByIdAsync(Guid id) =>
         await _databaseManager.GetTaskWithProjectAsync(id);
 
     public async Task<Tasks> AddAsync(Tasks task)
@@ -25,7 +25,7 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
         return await _databaseManager.UpdateAsync(task);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(Guid id)
     {
         try
         {
@@ -38,10 +38,15 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
         }
     }
 
-    public async Task<bool> ExistsAsync(int id)
+    public async Task<bool> ExistsAsync(Guid id)
     {
         var task = await _databaseManager.GetAsync<Tasks>(id);
         return task != null;
+    }
+
+    public async Task<bool> TaskNameExistsAsync(string title, Guid userId, Guid? projectId)
+    {
+        return await _databaseManager.TaskNameExistsAsync(title, userId, projectId);
     }
 
     public async Task<int> SaveChangesAsync()

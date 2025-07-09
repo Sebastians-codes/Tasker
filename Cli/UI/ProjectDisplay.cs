@@ -16,10 +16,11 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
         };
         table.Centered();
 
-        table.AddColumn("[rgb(190,140,150)]ID[/]");
         table.AddColumn("[rgb(190,140,150)]Name[/]");
         table.AddColumn("[rgb(190,140,150)]Priority[/]");
         table.AddColumn("[rgb(190,140,150)]Task Count[/]");
+        table.AddColumn("[rgb(190,140,150)]Total Estimate[/]");
+        table.AddColumn("[rgb(190,140,150)]Total Actual[/]");
 
         foreach (var project in projects)
         {
@@ -27,11 +28,24 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
             var taskCount = project.Tasks?.Count ?? 0;
             var taskCountText = taskCount > 0 ? taskCount.ToString() : "[dim]0[/]";
 
+            // Calculate cumulative time estimates and actual time
+            var totalEstimateMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.TimeEstimateMinutes ?? 0) ?? 0;
+            var totalActualMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.ActualTimeMinutes) ?? 0;
+            
+            var estimateText = totalEstimateMinutes > 0 
+                ? TaskDisplay.FormatTimeMinutes(totalEstimateMinutes)
+                : "[dim]No estimates[/]";
+                
+            var actualText = totalActualMinutes > 0 
+                ? TaskDisplay.FormatTimeMinutes(totalActualMinutes)
+                : "[dim]No time tracked[/]";
+
             table.AddRow(
-                project.Id.ToString(),
                 project.Name,
                 $"{priorityColor}{project.Priority}[/]",
-                taskCountText
+                taskCountText,
+                estimateText,
+                actualText
             );
         }
 
@@ -43,8 +57,20 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
         var taskCount = project.Tasks?.Count ?? 0;
         var taskCountText = $"[rgb(182,196,220)]Tasks:[/] {taskCount}\n";
 
-        var panel = new Panel($"[rgb(222,185,149)]{project.Name}[/]\n\n{project.Description}\n\n{taskCountText}[rgb(140,140,140)]Created: {project.CreatedOn:yy/MM/dd}[/]")
-            .Header($"[rgb(190,140,150)]Project #{project.Id}[/]")
+        // Calculate cumulative time estimates and actual time
+        var totalEstimateMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.TimeEstimateMinutes ?? 0) ?? 0;
+        var totalActualMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.ActualTimeMinutes) ?? 0;
+        
+        var estimateText = totalEstimateMinutes > 0 
+            ? $"[rgb(182,196,220)]Total Estimate:[/] {TaskDisplay.FormatTimeMinutes(totalEstimateMinutes)}\n"
+            : "[rgb(182,196,220)]Total Estimate:[/] [dim]No estimates[/]\n";
+            
+        var actualText = totalActualMinutes > 0 
+            ? $"[rgb(182,196,220)]Total Actual:[/] {TaskDisplay.FormatTimeMinutes(totalActualMinutes)}\n"
+            : "[rgb(182,196,220)]Total Actual:[/] [dim]No time tracked[/]\n";
+
+        var panel = new Panel($"[rgb(222,185,149)]{project.Name}[/]\n\n{project.Description}\n\n{taskCountText}{estimateText}{actualText}[rgb(140,140,140)]Created: {project.CreatedOn:yyyy/MM/dd}[/]")
+            .Header($"[rgb(190,140,150)]Project Details[/]")
             .Border(BoxBorder.Rounded)
             .Padding(2, 1);
 

@@ -1,4 +1,5 @@
 using Tasker.Domain.Models;
+using Tasker.Cli.UI;
 
 namespace Tasker.Cli.Services;
 
@@ -59,16 +60,7 @@ public static class TimeTrackingService
         if (totalMinutes == 0)
             return "[dim]No time tracked[/]";
 
-        if (totalMinutes < 60)
-            return $"{totalMinutes}min";
-
-        var hours = totalMinutes / 60;
-        var remainingMinutes = totalMinutes % 60;
-
-        if (remainingMinutes == 0)
-            return $"{hours}h";
-
-        return $"{hours}h {remainingMinutes}m";
+        return TaskDisplay.FormatTimeMinutes(totalMinutes);
     }
 
     public static string GetTimeTrackingStatus(Tasks task)

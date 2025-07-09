@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Spectre.Console;
 
 namespace Tasker.Cli.Helpers;
 
@@ -14,8 +15,8 @@ public static class InputParser
         {
             var parts = input.Split('/');
             if (parts.Length == 2 &&
-                int.TryParse(parts[0], out int month) &&
-                int.TryParse(parts[1], out int day))
+                int.TryParse(parts[0], out int day) &&
+                int.TryParse(parts[1], out int month))
             {
                 var currentYear = DateTime.UtcNow.Year;
                 try
@@ -78,5 +79,111 @@ public static class InputParser
             return plainMinutes;
 
         return null;
+    }
+
+    public static string? GetInputWithEscapeHandling(string prompt, bool allowEmpty = false)
+    {
+        while (true)
+        {
+            AnsiConsole.Write($"{prompt}: ");
+            AnsiConsole.MarkupLine("[dim]ESC to cancel[/]");
+            AnsiConsole.Write("> ");
+            
+            var input = "";
+            ConsoleKeyInfo key;
+            
+            while (true)
+            {
+                key = Console.ReadKey(true);
+                
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    Console.WriteLine();
+                    return null; // ESC pressed - cancellation
+                }
+                else if (key.Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (input.Length > 0)
+                    {
+                        input = input[..^1];
+                        Console.Write("\b \b");
+                    }
+                }
+                else if (!char.IsControl(key.KeyChar))
+                {
+                    input += key.KeyChar;
+                    Console.Write(key.KeyChar);
+                }
+            }
+            
+            Console.WriteLine();
+            input = input.Trim();
+            
+            // If input is empty and not allowed, prompt again
+            if (string.IsNullOrWhiteSpace(input) && !allowEmpty)
+            {
+                AnsiConsole.MarkupLine("[red]Please enter a value.[/]");
+                continue;
+            }
+            
+            return input;
+        }
+    }
+
+    public static string? GetPasswordWithEscapeHandling(string prompt)
+    {
+        while (true)
+        {
+            AnsiConsole.Write($"{prompt}: ");
+            AnsiConsole.MarkupLine("[dim]ESC to cancel[/]");
+            AnsiConsole.Write("> ");
+            
+            var input = "";
+            ConsoleKeyInfo key;
+            
+            while (true)
+            {
+                key = Console.ReadKey(true);
+                
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    Console.WriteLine();
+                    return null; // ESC pressed - cancellation
+                }
+                else if (key.Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (input.Length > 0)
+                    {
+                        input = input[..^1];
+                        Console.Write("\b \b");
+                    }
+                }
+                else if (!char.IsControl(key.KeyChar))
+                {
+                    input += key.KeyChar;
+                    Console.Write("*"); // Hide password characters
+                }
+            }
+            
+            Console.WriteLine();
+            input = input.Trim();
+            
+            // Password cannot be empty
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                AnsiConsole.MarkupLine("[red]Please enter a password.[/]");
+                continue;
+            }
+            
+            return input;
+        }
     }
 }

@@ -2,6 +2,7 @@ using Spectre.Console;
 using Tasker.Cli.Services;
 using Tasker.Domain.Models;
 using Tasker.Cli.Models;
+using Tasker.Cli.Helpers;
 
 namespace Tasker.Cli.UI;
 
@@ -103,23 +104,49 @@ public class LoginUI(IUserService userService, SessionService sessionService)
         AnsiConsole.Write(new Rule("[green]Register[/]").LeftJustified());
         AnsiConsole.WriteLine();
 
-        var username = AnsiConsole.Ask<string>("Username:");
-
-        if (await _userService.UsernameExistsAsync(username))
+        // Get username with validation
+        string? username;
+        while (true)
         {
-            AnsiConsole.MarkupLine("[red]Username already exists.[/]");
+            username = InputParser.GetInputWithEscapeHandling("Username");
+            
+            // Check for ESC cancellation
+            if (username == null)
+            {
+                AnsiConsole.MarkupLine("[yellow]Registration cancelled.[/]");
+                AnsiConsole.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                return;
+            }
+            
+            // Check if username already exists
+            if (await _userService.UsernameExistsAsync(username))
+            {
+                AnsiConsole.MarkupLine($"[red]Username '{username}' already exists. Please choose a different username.[/]");
+                continue;
+            }
+            break;
+        }
+
+        var password = InputParser.GetPasswordWithEscapeHandling("Password");
+
+        if (password == null)
+        {
+            AnsiConsole.MarkupLine("[yellow]Registration cancelled.[/]");
             AnsiConsole.WriteLine("Press any key to continue...");
             Console.ReadKey();
             return;
         }
 
-        var password = AnsiConsole.Prompt(
-            new TextPrompt<string>("Password:")
-                .Secret());
+        var confirmPassword = InputParser.GetPasswordWithEscapeHandling("Confirm Password");
 
-        var confirmPassword = AnsiConsole.Prompt(
-            new TextPrompt<string>("Confirm Password:")
-                .Secret());
+        if (confirmPassword == null)
+        {
+            AnsiConsole.MarkupLine("[yellow]Registration cancelled.[/]");
+            AnsiConsole.WriteLine("Press any key to continue...");
+            Console.ReadKey();
+            return;
+        }
 
         if (password != confirmPassword)
         {
