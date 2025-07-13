@@ -1,7 +1,6 @@
 using Tasker.Cli.Setup;
 using Tasker.Cli.UI;
 using Tasker.Infrastructure.Data;
-using Spectre.Console;
 
 if (!await SetupUI.EnsureDatabaseConfiguredAsync())
     return;
