@@ -11,7 +11,6 @@ public class SyncService
 
     public SyncService(
         PostgresDbContext postgresContext,
-        PostgresDbContext postgresContext,
         SqliteDbContext sqliteContext,
         IConnectionMonitor connectionMonitor)
     {
@@ -48,7 +47,7 @@ public class SyncService
             await SyncTasks(userId);
             await SyncUserSessions(userId);
         }
-        catch (Exception ex)
+        catch
         {
         }
     }
@@ -128,22 +127,17 @@ public class SyncService
     {
         var clonedEntity = Activator.CreateInstance<T>();
 
-        // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
-
 
         foreach (var property in properties)
         {
             var value = property.GetValue(entity);
 
-            // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
                 if (dt.Kind == DateTimeKind.Unspecified)
-                {
                     value = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-                }
             }
             else if (property.PropertyType == typeof(DateTime?) && value != null)
             {
@@ -154,10 +148,8 @@ public class SyncService
                 }
             }
 
-
             property.SetValue(clonedEntity, value);
         }
-
 
         return clonedEntity;
     }
@@ -166,10 +158,8 @@ public class SyncService
     {
         var clonedEntity = Activator.CreateInstance<T>();
 
-        // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
-
 
         foreach (var property in properties)
         {
@@ -196,21 +186,16 @@ public class SyncService
         {
             var value = property.GetValue(source);
 
-            // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
                 if (dt.Kind == DateTimeKind.Unspecified)
-                {
                     value = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-                }
             }
             else if (property.PropertyType == typeof(DateTime?) && value != null)
             {
                 var nullableDateTime = (DateTime?)value;
                 if (nullableDateTime.HasValue && nullableDateTime.Value.Kind == DateTimeKind.Unspecified)
-                {
                     value = DateTime.SpecifyKind(nullableDateTime.Value, DateTimeKind.Utc);
-                }
             }
 
 
@@ -230,7 +215,7 @@ public class SyncService
             await SyncTasksFromPostgres(userId);
             await SyncUserSessionsFromPostgres(userId);
         }
-        catch (Exception ex)
+        catch
         {
         }
     }
@@ -251,9 +236,8 @@ public class SyncService
                 user.IsSynced = true;
                 await _sqliteContext.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Failed to sync User with ID {user.Id}: {ex.Message}");
                 _postgresContext.ChangeTracker.Clear();
                 _sqliteContext.ChangeTracker.Clear();
                 continue;
@@ -278,7 +262,6 @@ public class SyncService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to sync Project with ID {project.Id}: {ex.Message}");
                 _postgresContext.ChangeTracker.Clear();
                 _sqliteContext.ChangeTracker.Clear();
                 continue;
@@ -436,10 +419,8 @@ public class SyncService
 
         if (!postgresUsers.Any())
             return;
-        return;
 
         var conflicts = DetectUserConflicts(sqliteUsers, postgresUsers);
-
 
         if (!conflicts.Any())
             return;

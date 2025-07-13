@@ -59,9 +59,8 @@ public static class ServiceContainer
             {
                 postgresContext.Database.Migrate();
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"PostgreSQL migration failed: {ex.Message}");
             }
         }
 
