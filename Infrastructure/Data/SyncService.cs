@@ -10,14 +10,14 @@ public class SyncService
     private readonly IConnectionMonitor _connectionMonitor;
 
     public SyncService(
-        PostgresDbContext postgresContext, 
+        PostgresDbContext postgresContext,
         SqliteDbContext sqliteContext,
         IConnectionMonitor connectionMonitor)
     {
         _postgresContext = postgresContext;
         _sqliteContext = sqliteContext;
         _connectionMonitor = connectionMonitor;
-        
+
         // Subscribe to connection status changes
         _connectionMonitor.ConnectionStatusChanged += OnConnectionStatusChanged;
     }
@@ -42,7 +42,7 @@ public class SyncService
         {
             // Check if PostgreSQL is empty and reset sync status if needed
             await CheckAndResetSyncStatusAsync();
-            
+
             // Sync in dependency order: Users first, then Projects, then Tasks, then UserSessions
             await SyncUsers(userId);
             await SyncProjects(userId);
@@ -63,7 +63,7 @@ public class SyncService
         var projectCount = await _postgresContext.Projects.CountAsync(x => !x.IsDeleted);
         var taskCount = await _postgresContext.Tasks.CountAsync(x => !x.IsDeleted);
         var sessionCount = await _postgresContext.UserSessions.CountAsync(x => !x.IsDeleted);
-        
+
         if (userCount == 0 && projectCount == 0 && taskCount == 0 && sessionCount == 0)
         {
             // Reset sync status for all entities in SQLite
@@ -79,12 +79,12 @@ public class SyncService
         var entities = await _sqliteContext.Set<T>()
             .Where(x => x.IsSynced)
             .ToListAsync();
-        
+
         foreach (var entity in entities)
         {
             entity.IsSynced = false;
         }
-        
+
         if (entities.Any())
         {
             await _sqliteContext.SaveChangesAsync();
@@ -135,15 +135,15 @@ public class SyncService
     {
         // Create a clean instance with only the essential properties (no navigation properties)
         var clonedEntity = Activator.CreateInstance<T>();
-        
+
         // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
-        
+
         foreach (var property in properties)
         {
             var value = property.GetValue(entity);
-            
+
             // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
@@ -160,10 +160,10 @@ public class SyncService
                     value = DateTime.SpecifyKind(nullableDateTime.Value, DateTimeKind.Utc);
                 }
             }
-            
+
             property.SetValue(clonedEntity, value);
         }
-        
+
         return clonedEntity;
     }
 
@@ -171,17 +171,17 @@ public class SyncService
     {
         // Create a clean instance with only the essential properties (no navigation properties)
         var clonedEntity = Activator.CreateInstance<T>();
-        
+
         // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
-        
+
         foreach (var property in properties)
         {
             var value = property.GetValue(entity);
             property.SetValue(clonedEntity, value);
         }
-        
+
         return clonedEntity;
     }
 
@@ -200,7 +200,7 @@ public class SyncService
         foreach (var property in properties)
         {
             var value = property.GetValue(source);
-            
+
             // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
@@ -217,7 +217,7 @@ public class SyncService
                     value = DateTime.SpecifyKind(nullableDateTime.Value, DateTimeKind.Utc);
                 }
             }
-            
+
             property.SetValue(destination, value);
         }
     }
@@ -247,7 +247,7 @@ public class SyncService
         var query = _sqliteContext.Users.Where(x => !x.IsSynced);
         if (userId.HasValue)
             query = query.Where(x => x.Id == userId.Value);
-        
+
         var users = await query.ToListAsync();
         foreach (var user in users)
         {
@@ -273,7 +273,7 @@ public class SyncService
         var query = _sqliteContext.Projects.Where(x => !x.IsSynced);
         if (userId.HasValue)
             query = query.Where(x => x.OwnerId == userId.Value);
-        
+
         var projects = await query.ToListAsync();
         foreach (var project in projects)
         {
@@ -299,7 +299,7 @@ public class SyncService
         var query = _sqliteContext.Tasks.Where(x => !x.IsSynced);
         if (userId.HasValue)
             query = query.Where(x => x.UserId == userId.Value);
-        
+
         var tasks = await query.ToListAsync();
         foreach (var task in tasks)
         {
@@ -314,7 +314,7 @@ public class SyncService
         var query = _sqliteContext.UserSessions.Where(x => !x.IsSynced);
         if (userId.HasValue)
             query = query.Where(x => x.UserId == userId.Value);
-        
+
         var sessions = await query.ToListAsync();
         foreach (var session in sessions)
         {
@@ -329,7 +329,7 @@ public class SyncService
         var query = _postgresContext.Users.Where(x => !x.IsDeleted);
         if (userId.HasValue)
             query = query.Where(x => x.Id == userId.Value);
-        
+
         var users = await query.ToListAsync();
         foreach (var user in users)
         {
@@ -354,7 +354,7 @@ public class SyncService
         var query = _postgresContext.Projects.Where(x => !x.IsDeleted);
         if (userId.HasValue)
             query = query.Where(x => x.OwnerId == userId.Value);
-        
+
         var projects = await query.ToListAsync();
         foreach (var project in projects)
         {
@@ -379,7 +379,7 @@ public class SyncService
         var query = _postgresContext.Tasks.Where(x => !x.IsDeleted);
         if (userId.HasValue)
             query = query.Where(x => x.UserId == userId.Value);
-        
+
         var tasks = await query.ToListAsync();
         foreach (var task in tasks)
         {
@@ -404,7 +404,7 @@ public class SyncService
         var query = _postgresContext.UserSessions.Where(x => !x.IsDeleted);
         if (userId.HasValue)
             query = query.Where(x => x.UserId == userId.Value);
-        
+
         var sessions = await query.ToListAsync();
         foreach (var session in sessions)
         {
@@ -431,7 +431,6 @@ public class SyncService
 
     public async Task HandleUsernameConflictsAsync()
     {
-        // Get all SQLite users that haven't been synced
         var sqliteUsers = await _sqliteContext.Users
             .Where(x => !x.IsDeleted && !x.IsSynced)
             .ToListAsync();
@@ -439,25 +438,20 @@ public class SyncService
         if (!sqliteUsers.Any())
             return;
 
-        // Get all PostgreSQL users
         var postgresUsers = await _postgresContext.Users
             .Where(x => !x.IsDeleted)
             .ToListAsync();
 
         if (!postgresUsers.Any())
-            return; // No conflicts if PostgreSQL is empty
+            return;
 
-        // Check for conflicts
         var conflicts = DetectUserConflicts(sqliteUsers, postgresUsers);
-        
+
         if (!conflicts.Any())
             return;
 
-        // Resolve conflicts
         foreach (var conflict in conflicts)
-        {
             await ResolveUserConflict(conflict);
-        }
     }
 
     private List<UserConflict> DetectUserConflicts(List<User> sqliteUsers, List<User> postgresUsers)
@@ -485,9 +479,9 @@ public class SyncService
             }
 
             // Check for username conflicts
-            var postgresUserWithSameUsername = postgresUsers.FirstOrDefault(p => 
+            var postgresUserWithSameUsername = postgresUsers.FirstOrDefault(p =>
                 p.Username.ToLower() == sqliteUser.Username.ToLower());
-            
+
             if (postgresUserWithSameUsername != null)
             {
                 // Different ID, same username - username conflict
@@ -517,11 +511,10 @@ public class SyncService
             Console.WriteLine("This shouldn't happen. The SQLite user will be assigned a new ID.");
             Console.WriteLine();
 
-            // Assign new ID to SQLite user
             conflict.SqliteUser.Id = Guid.NewGuid();
             conflict.SqliteUser.LastModified = DateTime.UtcNow;
             conflict.SqliteUser.IsSynced = false;
-            
+
             _sqliteContext.Users.Update(conflict.SqliteUser);
             await _sqliteContext.SaveChangesAsync();
 
@@ -535,11 +528,11 @@ public class SyncService
             Console.WriteLine();
 
             string newUsername = await PromptForNewUsername(conflict.SqliteUser.Username);
-            
+
             conflict.SqliteUser.Username = newUsername;
             conflict.SqliteUser.LastModified = DateTime.UtcNow;
             conflict.SqliteUser.IsSynced = false;
-            
+
             _sqliteContext.Users.Update(conflict.SqliteUser);
             await _sqliteContext.SaveChangesAsync();
 
@@ -564,7 +557,6 @@ public class SyncService
                 continue;
             }
 
-            // Check if new username conflicts with PostgreSQL
             var existsInPostgres = await _postgresContext.Users
                 .AnyAsync(x => x.Username.ToLower() == newUsername.ToLower() && !x.IsDeleted);
 
@@ -574,7 +566,6 @@ public class SyncService
                 continue;
             }
 
-            // Check if new username conflicts with other SQLite users
             var existsInSqlite = await _sqliteContext.Users
                 .AnyAsync(x => x.Username.ToLower() == newUsername.ToLower() && !x.IsDeleted);
 
