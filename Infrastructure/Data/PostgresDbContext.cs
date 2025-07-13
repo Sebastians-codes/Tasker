@@ -16,9 +16,6 @@ public class PostgresDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PostgresDbContext).Assembly);
     }
-
-    // Removed automatic sync metadata updates since DatabaseManager handles this
 }

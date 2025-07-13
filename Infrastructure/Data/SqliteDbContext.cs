@@ -16,9 +16,7 @@ public class SqliteDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply configurations from assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SqliteDbContext).Assembly);
     }
 
-    // Removed automatic sync metadata updates since DatabaseManager handles this
 }

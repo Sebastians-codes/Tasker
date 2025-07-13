@@ -53,7 +53,6 @@ public static class ServiceContainer
         var connectionMonitor = new ConnectionMonitor(postgresContext);
         var syncService = new SyncService(postgresContext, sqliteContext, connectionMonitor);
 
-        // Only migrate PostgreSQL if not in local-only mode
         if (postgresConnectionString != "local_only_mode")
         {
             try

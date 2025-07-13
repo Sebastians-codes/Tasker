@@ -56,7 +56,6 @@ public class UserService(IUserRepository userRepository) : IUserService
         }
         finally
         {
-            // Clear the password string from memory
             if (passwordString != null)
             {
                 unsafe
@@ -100,7 +99,6 @@ public class UserService(IUserRepository userRepository) : IUserService
         }
         finally
         {
-            // Clear the password string from memory
             if (passwordString != null)
             {
                 unsafe

@@ -4,10 +4,8 @@
 
 namespace Infrastructure.Migrations
 {
-    /// <inheritdoc />
     public partial class AddUniqueConstraints : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
@@ -27,7 +25,6 @@ namespace Infrastructure.Migrations
                 unique: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(

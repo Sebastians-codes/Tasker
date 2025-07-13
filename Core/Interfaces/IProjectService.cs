@@ -12,5 +12,4 @@ public interface IProjectService
     Task<bool> DeleteProjectAsync(Guid projectId);
     Task<bool> ProjectExistsAsync(Guid projectId);
     Task<bool> ProjectNameExistsAsync(string name);
-    // Task EnsureSampleDataAsync();
 }

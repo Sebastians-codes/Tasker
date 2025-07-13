@@ -21,7 +21,6 @@ public static class DomainEncryptionService
             var plainBytes = Encoding.UTF8.GetBytes(plainText);
             var encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
 
-            // Combine IV and encrypted data
             var result = new byte[aes.IV.Length + encryptedBytes.Length];
             Array.Copy(aes.IV, 0, result, 0, aes.IV.Length);
             Array.Copy(encryptedBytes, 0, result, aes.IV.Length, encryptedBytes.Length);
@@ -30,7 +29,6 @@ public static class DomainEncryptionService
         }
         catch
         {
-            // If encryption fails, return original string to maintain functionality
             return plainText;
         }
     }
@@ -44,14 +42,13 @@ public static class DomainEncryptionService
         {
             var encryptedData = Convert.FromBase64String(encryptedText);
             
-            if (encryptedData.Length < 16) // IV is 16 bytes
-                return encryptedText; // Not encrypted or invalid format
+            if (encryptedData.Length < 16)
+                return encryptedText;
 
             var key = DeriveUserKey(userId);
             using var aes = Aes.Create();
             aes.Key = key;
 
-            // Extract IV and encrypted data
             var iv = new byte[16];
             Array.Copy(encryptedData, 0, iv, 0, 16);
             aes.IV = iv;
@@ -66,28 +63,23 @@ public static class DomainEncryptionService
         }
         catch
         {
-            // If decryption fails, return original string (handles non-encrypted data)
             return encryptedText;
         }
     }
 
     private static byte[] DeriveUserKey(Guid userId)
     {
-        // Use user ID as key material for consistent encryption across devices
         var userIdBytes = userId.ToByteArray();
         var keyMaterial = Encoding.UTF8.GetBytes($"TaskerUser:{userId}");
         
-        // Create combined key material
         var combinedKeyMaterial = new byte[keyMaterial.Length + userIdBytes.Length];
         Array.Copy(keyMaterial, 0, combinedKeyMaterial, 0, keyMaterial.Length);
         Array.Copy(userIdBytes, 0, combinedKeyMaterial, keyMaterial.Length, userIdBytes.Length);
 
-        // Use a fixed salt based on user ID for consistency
         using var sha256 = SHA256.Create();
         var salt = sha256.ComputeHash(Encoding.UTF8.GetBytes($"TaskerUserSalt:{userId}"));
 
-        // Derive key using PBKDF2
         using var pbkdf2 = new Rfc2898DeriveBytes(combinedKeyMaterial, salt, 100000, HashAlgorithmName.SHA256);
-        return pbkdf2.GetBytes(32); // 256-bit key
+        return pbkdf2.GetBytes(32);
     }
 }

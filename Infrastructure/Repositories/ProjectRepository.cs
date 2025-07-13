@@ -12,7 +12,6 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
     {
         var projects = await _databaseManager.GetAllProjectsWithTasksAsync();
         
-        // Decrypt all projects and their tasks after retrieval
         foreach (var project in projects)
         {
             project.Decrypt();
@@ -29,7 +28,6 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
     {
         var project = await _databaseManager.GetProjectWithTasksAsync(id);
         
-        // Decrypt project and its tasks after retrieval
         if (project != null)
         {
             project.Decrypt();
@@ -44,12 +42,10 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
 
     public async Task<Project> AddAsync(Project project)
     {
-        // Encrypt project before saving
         project.Encrypt();
         
         var result = await _databaseManager.AddAsync(project);
         
-        // Decrypt the result for the caller
         result.Decrypt();
         
         return result;
@@ -59,12 +55,10 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
     {
         project.UpdatedOn = DateTime.UtcNow;
         
-        // Encrypt project before saving
         project.Encrypt();
         
         var result = await _databaseManager.UpdateAsync(project);
         
-        // Decrypt the result for the caller
         result.Decrypt();
         
         return result;
@@ -96,7 +90,6 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
 
     public async Task<int> SaveChangesAsync()
     {
-        // DatabaseManager handles saves automatically
         return await Task.FromResult(1);
     }
 }

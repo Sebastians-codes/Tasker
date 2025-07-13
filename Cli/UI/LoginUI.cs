@@ -118,7 +118,6 @@ public class LoginUI(IUserService userService, SessionService sessionService)
         {
             username = InputParser.GetInputWithEscapeHandling("Username");
             
-            // Check for ESC cancellation
             if (username == null)
             {
                 AnsiConsole.MarkupLine("[yellow]Registration cancelled.[/]");
@@ -127,7 +126,6 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                 return;
             }
             
-            // Check if username already exists
             if (await _userService.UsernameExistsAsync(username))
             {
                 AnsiConsole.MarkupLine($"[red]Username '{username}' already exists. Please choose a different username.[/]");
@@ -157,7 +155,6 @@ public class LoginUI(IUserService userService, SessionService sessionService)
             return;
         }
 
-        // Compare passwords manually since SecureString doesn't have comparison
         if (!SecureStringEqual(password, confirmPassword))
         {
             password.Dispose();
@@ -168,7 +165,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
             return;
         }
 
-        confirmPassword.Dispose(); // We don't need this anymore
+        confirmPassword.Dispose();
 
         try
         {

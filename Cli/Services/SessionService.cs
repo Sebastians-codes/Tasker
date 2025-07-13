@@ -12,8 +12,6 @@ public class SessionService(IUserRepository userRepository, SyncService syncServ
 
     public async Task<UserSession> CreateSessionAsync(User user, int durationDays, bool autoLoginEnabled)
     {
-        // Ensure user is synced to SQLite before creating session
-        // This prevents foreign key constraint violations when SQLite is fresh
         await _syncService.FullSyncFromPostgresAsync(user.Id);
 
         var token = GenerateSecureToken();

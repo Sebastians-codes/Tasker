@@ -51,7 +51,6 @@ public class UserRepository(DatabaseManager databaseManager) : IUserRepository
 
     public async Task<int> SaveChangesAsync()
     {
-        // DatabaseManager handles saves automatically
         return await Task.FromResult(1);
     }
 

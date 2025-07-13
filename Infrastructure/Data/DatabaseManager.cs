@@ -209,14 +209,12 @@ public class DatabaseManager
         entity.IsSynced = false;
         entity.SyncVersion = Guid.NewGuid().ToString();
 
-        // Find the existing entity in SQLite to ensure proper tracking
         var existingSqliteEntity = await _sqliteContext.Set<T>()
             .Where(e => e.Id == entity.Id && !e.IsDeleted)
             .FirstOrDefaultAsync();
 
         if (existingSqliteEntity != null)
         {
-            // Update the existing entity's properties
             UpdateEntityProperties(entity, existingSqliteEntity);
             existingSqliteEntity.LastModified = entity.LastModified;
             existingSqliteEntity.IsSynced = entity.IsSynced;
@@ -224,7 +222,6 @@ public class DatabaseManager
         }
         else
         {
-            // Entity doesn't exist in SQLite, add it
             _sqliteContext.Set<T>().Add(entity);
         }
 
@@ -254,7 +251,6 @@ public class DatabaseManager
                     await _postgresContext.SaveChangesAsync();
                 }
 
-                // Update the SQLite entity to mark as synced
                 if (existingSqliteEntity != null)
                 {
                     existingSqliteEntity.IsSynced = true;
@@ -351,7 +347,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -370,7 +365,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -392,7 +386,6 @@ public class DatabaseManager
             }
             catch
             {
-                // Fall back to SQLite if PostgreSQL fails
             }
         }
 
@@ -405,14 +398,12 @@ public class DatabaseManager
 
     private void DetachEntityFromContexts<T>(T entity) where T : BaseEntity
     {
-        // Detach from PostgreSQL context if tracked
         var postgresEntry = _postgresContext.Entry(entity);
         if (postgresEntry.State != EntityState.Detached)
         {
             postgresEntry.State = EntityState.Detached;
         }
 
-        // Detach from SQLite context if tracked
         var sqliteEntry = _sqliteContext.Entry(entity);
         if (sqliteEntry.State != EntityState.Detached)
         {
@@ -422,10 +413,8 @@ public class DatabaseManager
 
     private T CloneEntityForPostgres<T>(T entity) where T : BaseEntity
     {
-        // Create a clean instance with only the essential properties (no navigation properties)
         var clonedEntity = Activator.CreateInstance<T>();
 
-        // Copy all simple properties (not navigation properties)
         var properties = typeof(T).GetProperties()
             .Where(p => p.CanWrite && p.CanRead && !IsNavigationProperty(p));
 
@@ -433,7 +422,6 @@ public class DatabaseManager
         {
             var value = property.GetValue(entity);
 
-            // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
                 if (dt.Kind == DateTimeKind.Unspecified)
@@ -453,7 +441,6 @@ public class DatabaseManager
             property.SetValue(clonedEntity, value);
         }
 
-        // Ensure sync metadata is set (also convert to UTC)
         clonedEntity.LastModified = entity.LastModified.Kind == DateTimeKind.Unspecified
             ? DateTime.SpecifyKind(entity.LastModified, DateTimeKind.Utc)
             : entity.LastModified;
@@ -465,7 +452,6 @@ public class DatabaseManager
 
     private bool IsNavigationProperty(System.Reflection.PropertyInfo property)
     {
-        // Skip navigation properties that would cause tracking conflicts
         var navigationPropertyNames = new[] { "User", "Project", "Owner", "Tasks", "Projects" };
         return navigationPropertyNames.Contains(property.Name);
     }
@@ -480,7 +466,6 @@ public class DatabaseManager
         {
             var value = property.GetValue(source);
 
-            // Convert DateTime values to UTC for PostgreSQL
             if (value is DateTime dt)
             {
                 if (dt.Kind == DateTimeKind.Unspecified)
@@ -503,7 +488,6 @@ public class DatabaseManager
 
     private T CloneEntity<T>(T entity) where T : BaseEntity
     {
-        // Simple cloning for sync operations
         var json = System.Text.Json.JsonSerializer.Serialize(entity, new JsonSerializerOptions
         {
             ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles

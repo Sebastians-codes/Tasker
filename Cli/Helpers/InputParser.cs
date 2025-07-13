@@ -100,7 +100,7 @@ public static class InputParser
                 if (key.Key == ConsoleKey.Escape)
                 {
                     Console.WriteLine();
-                    return null; // ESC pressed - cancellation
+                    return null;
                 }
                 else if (key.Key == ConsoleKey.Enter)
                 {
@@ -124,7 +124,6 @@ public static class InputParser
             Console.WriteLine();
             input = input.Trim();
             
-            // If input is empty and not allowed, prompt again
             if (string.IsNullOrWhiteSpace(input) && !allowEmpty)
             {
                 AnsiConsole.MarkupLine("[red]Please enter a value.[/]");
@@ -154,7 +153,7 @@ public static class InputParser
                 {
                     Console.WriteLine();
                     securePassword.Dispose();
-                    return null; // ESC pressed - cancellation
+                    return null;
                 }
                 else if (key.Key == ConsoleKey.Enter)
                 {
@@ -171,13 +170,12 @@ public static class InputParser
                 else if (!char.IsControl(key.KeyChar))
                 {
                     securePassword.AppendChar(key.KeyChar);
-                    Console.Write("*"); // Hide password characters
+                    Console.Write("*");
                 }
             }
             
             Console.WriteLine();
             
-            // Password cannot be empty
             if (securePassword.Length == 0)
             {
                 AnsiConsole.MarkupLine("[red]Please enter a password.[/]");

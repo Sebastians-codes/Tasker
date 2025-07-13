@@ -12,7 +12,6 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
     {
         var tasks = await _databaseManager.GetAllTasksWithProjectAsync();
         
-        // Decrypt all tasks after retrieval
         foreach (var task in tasks)
         {
             task.Decrypt();
@@ -25,7 +24,6 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
     {
         var task = await _databaseManager.GetTaskWithProjectAsync(id);
         
-        // Decrypt task after retrieval
         task?.Decrypt();
         
         return task;
@@ -33,12 +31,10 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
 
     public async Task<Tasks> AddAsync(Tasks task)
     {
-        // Encrypt task before saving
         task.Encrypt();
         
         var result = await _databaseManager.AddAsync(task);
         
-        // Decrypt the result for the caller
         result.Decrypt();
         
         return result;
@@ -48,12 +44,10 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
     {
         task.UpdatedOn = DateTime.UtcNow;
         
-        // Encrypt task before saving
         task.Encrypt();
         
         var result = await _databaseManager.UpdateAsync(task);
         
-        // Decrypt the result for the caller
         result.Decrypt();
         
         return result;
@@ -85,7 +79,6 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
 
     public async Task<int> SaveChangesAsync()
     {
-        // DatabaseManager handles saves automatically
         return await Task.FromResult(1);
     }
 }

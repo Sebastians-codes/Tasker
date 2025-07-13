@@ -18,7 +18,6 @@ public class PostgresDesignTimeDbContextFactory : IDesignTimeDbContextFactory<Po
 
     private static string GetConnectionString()
     {
-        // Try to get connection string from config.json first
         var configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
             "Tasker", 
@@ -36,19 +35,15 @@ public class PostgresDesignTimeDbContextFactory : IDesignTimeDbContextFactory<Po
                     var connectionStringValue = encryptedConnectionString.GetString();
                     if (!string.IsNullOrEmpty(connectionStringValue))
                     {
-                        // For design-time, we'll use the fallback connection string
-                        // since we can't decrypt without the full CLI context
                         return "Host=localhost;Database=tasker;Username=postgres;Password=password";
                     }
                 }
             }
             catch
             {
-                // If config reading fails, use fallback
             }
         }
         
-        // Fallback PostgreSQL connection string for design-time operations
         return "Host=localhost;Database=tasker;Username=postgres;Password=password";
     }
 }
