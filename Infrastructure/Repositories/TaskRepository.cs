@@ -11,45 +11,29 @@ public class TaskRepository(DatabaseManager databaseManager) : ITaskRepository
     public async Task<IEnumerable<Tasks>> GetAllAsync()
     {
         var tasks = await _databaseManager.GetAllTasksWithProjectAsync();
-        
-        foreach (var task in tasks)
-        {
-            task.Decrypt();
-        }
-        
+
         return tasks;
     }
 
     public async Task<Tasks?> GetByIdAsync(Guid id)
     {
         var task = await _databaseManager.GetTaskWithProjectAsync(id);
-        
-        task?.Decrypt();
-        
+
         return task;
     }
 
     public async Task<Tasks> AddAsync(Tasks task)
     {
-        task.Encrypt();
-        
         var result = await _databaseManager.AddAsync(task);
-        
-        result.Decrypt();
-        
         return result;
     }
 
     public async Task<Tasks> UpdateAsync(Tasks task)
     {
         task.UpdatedOn = DateTime.UtcNow;
-        
-        task.Encrypt();
-        
+
         var result = await _databaseManager.UpdateAsync(task);
-        
-        result.Decrypt();
-        
+
         return result;
     }
 

@@ -11,56 +11,30 @@ public class ProjectRepository(DatabaseManager databaseManager) : IProjectReposi
     public async Task<IEnumerable<Project>> GetAllAsync()
     {
         var projects = await _databaseManager.GetAllProjectsWithTasksAsync();
-        
-        foreach (var project in projects)
-        {
-            project.Decrypt();
-            foreach (var task in project.Tasks)
-            {
-                task.Decrypt();
-            }
-        }
-        
+
         return projects;
     }
 
     public async Task<Project?> GetByIdAsync(Guid id)
     {
         var project = await _databaseManager.GetProjectWithTasksAsync(id);
-        
-        if (project != null)
-        {
-            project.Decrypt();
-            foreach (var task in project.Tasks)
-            {
-                task.Decrypt();
-            }
-        }
-        
+
         return project;
     }
 
     public async Task<Project> AddAsync(Project project)
     {
-        project.Encrypt();
-        
         var result = await _databaseManager.AddAsync(project);
-        
-        result.Decrypt();
-        
+
         return result;
     }
 
     public async Task<Project> UpdateAsync(Project project)
     {
         project.UpdatedOn = DateTime.UtcNow;
-        
-        project.Encrypt();
-        
+
         var result = await _databaseManager.UpdateAsync(project);
-        
-        result.Decrypt();
-        
+
         return result;
     }
 
