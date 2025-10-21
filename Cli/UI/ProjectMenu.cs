@@ -1,7 +1,7 @@
 using Spectre.Console;
 using Tasker.Core.Interfaces;
-using Tasker.Domain.Models;
 using Tasker.Cli.Helpers;
+using Domain.Models;
 
 namespace Tasker.Cli.UI;
 
@@ -105,14 +105,14 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
         while (true)
         {
             name = InputParser.GetInputWithEscapeHandling("Enter project name");
-            
+
             // Check for ESC cancellation
             if (name == null)
             {
                 _display.ShowErrorMessage("Project creation cancelled.");
                 return;
             }
-            
+
             // Check if project name already exists
             if (await _projectService.ProjectNameExistsAsync(name))
             {
@@ -330,14 +330,14 @@ public class ProjectMenu(IProjectService projectService, ProjectDisplay display,
         while (true)
         {
             title = InputParser.GetInputWithEscapeHandling("Enter task title");
-            
+
             // Check for ESC cancellation
             if (title == null)
             {
                 _display.ShowErrorMessage("Task creation cancelled.");
                 return;
             }
-            
+
             // Check if task name already exists in this project
             if (await _taskService.TaskNameExistsAsync(title, project.Id))
             {

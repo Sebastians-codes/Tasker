@@ -1,5 +1,5 @@
+using Domain.Models;
 using Tasker.Core.Interfaces;
-using Tasker.Domain.Models;
 using Tasker.Infrastructure.Data;
 
 namespace Tasker.Infrastructure.Repositories;

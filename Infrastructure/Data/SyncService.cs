@@ -1,5 +1,5 @@
+using Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Tasker.Domain.Models;
 
 namespace Tasker.Infrastructure.Data;
 

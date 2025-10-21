@@ -1,7 +1,7 @@
 using Spectre.Console;
 using Tasker.Core.Interfaces;
-using Tasker.Domain.Models;
 using Tasker.Cli.Helpers;
+using Domain.Models;
 
 namespace Tasker.Cli.UI;
 
@@ -138,14 +138,14 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
         while (true)
         {
             title = InputParser.GetInputWithEscapeHandling("Enter task title");
-            
+
             // Check for ESC cancellation
             if (title == null)
             {
                 _display.ShowErrorMessage("Task creation cancelled.");
                 return;
             }
-            
+
             // Check if task name already exists in this project context
             if (await _taskService.TaskNameExistsAsync(title, projectId))
             {
@@ -344,10 +344,10 @@ public class TaskMenu(ITaskService taskService, IProjectService projectService, 
                 .UseConverter(task => task.Project != null ? $"{task.Title} ({task.Project.Name})" : task.Title)
                 .AddChoices(tasks));
 
-        var deleteMessage = taskToDelete.Project != null 
+        var deleteMessage = taskToDelete.Project != null
             ? $"Are you sure you want to delete '{taskToDelete.Title}' in project '{taskToDelete.Project.Name}'?"
             : $"Are you sure you want to delete '{taskToDelete.Title}'?";
-        
+
         if (AnsiConsole.Confirm(deleteMessage))
         {
             await _taskService.DeleteTaskAsync(taskToDelete.Id);

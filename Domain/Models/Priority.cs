@@ -1,4 +1,4 @@
-namespace Tasker.Domain.Models;
+namespace Domain.Models;
 
 public enum Priority
 {

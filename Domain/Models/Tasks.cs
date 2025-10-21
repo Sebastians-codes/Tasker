@@ -1,6 +1,6 @@
 using Tasker.Domain.Services;
 
-namespace Tasker.Domain.Models;
+namespace Domain.Models;
 
 public class Tasks : BaseEntity
 {
@@ -20,7 +20,7 @@ public class Tasks : BaseEntity
     public DateTime? LastPausedTime { get; set; }
 
     public Guid UserId { get; set; }
-    public User User { get; set; }
+    public User? User { get; set; }
 
     public Guid? ProjectId { get; set; }
     public Project? Project { get; set; }

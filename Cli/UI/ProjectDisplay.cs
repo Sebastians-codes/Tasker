@@ -1,5 +1,5 @@
+using Domain.Models;
 using Spectre.Console;
-using Tasker.Domain.Models;
 
 namespace Tasker.Cli.UI;
 
@@ -31,12 +31,12 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
             // Calculate cumulative time estimates and actual time
             var totalEstimateMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.TimeEstimateMinutes ?? 0) ?? 0;
             var totalActualMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.ActualTimeMinutes) ?? 0;
-            
-            var estimateText = totalEstimateMinutes > 0 
+
+            var estimateText = totalEstimateMinutes > 0
                 ? TaskDisplay.FormatTimeMinutes(totalEstimateMinutes)
                 : "[dim]No estimates[/]";
-                
-            var actualText = totalActualMinutes > 0 
+
+            var actualText = totalActualMinutes > 0
                 ? TaskDisplay.FormatTimeMinutes(totalActualMinutes)
                 : "[dim]No time tracked[/]";
 
@@ -60,12 +60,12 @@ public class ProjectDisplay(TaskDisplay taskDisplay)
         // Calculate cumulative time estimates and actual time
         var totalEstimateMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.TimeEstimateMinutes ?? 0) ?? 0;
         var totalActualMinutes = project.Tasks?.Where(t => !t.IsDeleted).Sum(t => t.ActualTimeMinutes) ?? 0;
-        
-        var estimateText = totalEstimateMinutes > 0 
+
+        var estimateText = totalEstimateMinutes > 0
             ? $"[rgb(182,196,220)]Total Estimate:[/] {TaskDisplay.FormatTimeMinutes(totalEstimateMinutes)}\n"
             : "[rgb(182,196,220)]Total Estimate:[/] [dim]No estimates[/]\n";
-            
-        var actualText = totalActualMinutes > 0 
+
+        var actualText = totalActualMinutes > 0
             ? $"[rgb(182,196,220)]Total Actual:[/] {TaskDisplay.FormatTimeMinutes(totalActualMinutes)}\n"
             : "[rgb(182,196,220)]Total Actual:[/] [dim]No time tracked[/]\n";
 

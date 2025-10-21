@@ -41,7 +41,7 @@ public static class DomainEncryptionService
         try
         {
             var encryptedData = Convert.FromBase64String(encryptedText);
-            
+
             if (encryptedData.Length < 16)
                 return encryptedText;
 
@@ -71,7 +71,7 @@ public static class DomainEncryptionService
     {
         var userIdBytes = userId.ToByteArray();
         var keyMaterial = Encoding.UTF8.GetBytes($"TaskerUser:{userId}");
-        
+
         var combinedKeyMaterial = new byte[keyMaterial.Length + userIdBytes.Length];
         Array.Copy(keyMaterial, 0, combinedKeyMaterial, 0, keyMaterial.Length);
         Array.Copy(userIdBytes, 0, combinedKeyMaterial, keyMaterial.Length, userIdBytes.Length);

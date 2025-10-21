@@ -1,4 +1,4 @@
-namespace Tasker.Domain.Models;
+namespace Domain.Models;
 
 public class UserSession : BaseEntity
 {
@@ -9,6 +9,6 @@ public class UserSession : BaseEntity
     public int DurationDays { get; set; }
     public bool AutoLoginEnabled { get; set; }
     public string MachineId { get; set; } = string.Empty;
-    
+
     public User User { get; set; } = null!;
 }

@@ -1,6 +1,6 @@
 using Tasker.Domain.Services;
 
-namespace Tasker.Domain.Models;
+namespace Domain.Models;
 
 public class Project : BaseEntity
 {

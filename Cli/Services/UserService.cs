@@ -1,8 +1,8 @@
 using BCrypt.Net;
 using Tasker.Core.Interfaces;
-using Tasker.Domain.Models;
 using System.Security;
 using System.Runtime.InteropServices;
+using Domain.Models;
 
 namespace Tasker.Cli.Services;
 

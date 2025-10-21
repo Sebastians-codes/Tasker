@@ -1,4 +1,4 @@
-using Tasker.Domain.Models;
+using Domain.Models;
 
 namespace Tasker.Core.Interfaces;
 

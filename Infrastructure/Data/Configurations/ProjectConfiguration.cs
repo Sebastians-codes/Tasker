@@ -1,6 +1,6 @@
+using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Tasker.Domain.Models;
 
 namespace Tasker.Infrastructure.Data.Configurations;
 
@@ -33,14 +33,14 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .IsUnique();
         builder.HasIndex(p => p.Priority);
         builder.HasIndex(p => p.CreatedOn);
-        
+
         // Configure BaseEntity properties
         builder.Property(p => p.LastModified)
             .IsRequired();
-            
+
         builder.Property(p => p.IsSynced)
             .IsRequired();
-            
+
         builder.Property(p => p.IsDeleted)
             .IsRequired();
     }

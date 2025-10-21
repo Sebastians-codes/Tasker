@@ -1,5 +1,5 @@
-using Tasker.Domain.Models;
 using System.Security;
+using Domain.Models;
 
 namespace Tasker.Cli.Services;
 

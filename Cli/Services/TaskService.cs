@@ -1,5 +1,5 @@
+using Domain.Models;
 using Tasker.Core.Interfaces;
-using Tasker.Domain.Models;
 
 namespace Tasker.Cli.Services;
 

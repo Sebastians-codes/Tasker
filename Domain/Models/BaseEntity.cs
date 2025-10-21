@@ -1,4 +1,4 @@
-namespace Tasker.Domain.Models;
+namespace Domain.Models;
 
 public abstract class BaseEntity
 {

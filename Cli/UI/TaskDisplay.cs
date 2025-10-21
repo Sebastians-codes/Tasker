@@ -1,6 +1,6 @@
 using Spectre.Console;
-using Tasker.Domain.Models;
 using Tasker.Cli.Services;
+using Domain.Models;
 
 namespace Tasker.Cli.UI;
 
@@ -92,12 +92,12 @@ public class TaskDisplay
     {
         if (totalMinutes == 0)
             return "0min";
-            
+
         if (totalMinutes < 60)
             return $"{totalMinutes}min";
 
         var parts = new List<string>();
-        
+
         // Calculate years (assuming 365 days per year, 8 hours per day)
         var minutesPerYear = 365 * 24 * 60;
         if (totalMinutes >= minutesPerYear)
@@ -106,7 +106,7 @@ public class TaskDisplay
             parts.Add($"{years}y");
             totalMinutes %= minutesPerYear;
         }
-        
+
         // Calculate months (assuming 30 days per month, 8 hours per day)
         var minutesPerMonth = 30 * 24 * 60;
         if (totalMinutes >= minutesPerMonth)
@@ -115,7 +115,7 @@ public class TaskDisplay
             parts.Add($"{months}mo");
             totalMinutes %= minutesPerMonth;
         }
-        
+
         // Calculate weeks
         var minutesPerWeek = 7 * 24 * 60;
         if (totalMinutes >= minutesPerWeek)
@@ -124,7 +124,7 @@ public class TaskDisplay
             parts.Add($"{weeks}w");
             totalMinutes %= minutesPerWeek;
         }
-        
+
         // Calculate days
         var minutesPerDay = 24 * 60;
         if (totalMinutes >= minutesPerDay)
@@ -133,7 +133,7 @@ public class TaskDisplay
             parts.Add($"{days}d");
             totalMinutes %= minutesPerDay;
         }
-        
+
         // Calculate hours
         if (totalMinutes >= 60)
         {
@@ -141,13 +141,13 @@ public class TaskDisplay
             parts.Add($"{hours}h");
             totalMinutes %= 60;
         }
-        
+
         // Calculate remaining minutes
         if (totalMinutes > 0)
         {
             parts.Add($"{totalMinutes}m");
         }
-        
+
         return string.Join(" ", parts);
     }
 

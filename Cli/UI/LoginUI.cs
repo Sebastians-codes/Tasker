@@ -1,10 +1,10 @@
 using Spectre.Console;
 using Tasker.Cli.Services;
-using Tasker.Domain.Models;
 using Tasker.Cli.Models;
 using Tasker.Cli.Helpers;
 using System.Security;
 using System.Runtime.InteropServices;
+using Domain.Models;
 
 namespace Tasker.Cli.UI;
 
@@ -81,7 +81,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
 
         var username = AnsiConsole.Ask<string>("Username:");
         var password = InputParser.GetPasswordWithEscapeHandling("Password");
-        
+
         if (password == null)
         {
             AnsiConsole.MarkupLine("[yellow]Login cancelled.[/]");
@@ -117,7 +117,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
         while (true)
         {
             username = InputParser.GetInputWithEscapeHandling("Username");
-            
+
             if (username == null)
             {
                 AnsiConsole.MarkupLine("[yellow]Registration cancelled.[/]");
@@ -125,7 +125,7 @@ public class LoginUI(IUserService userService, SessionService sessionService)
                 Console.ReadKey();
                 return;
             }
-            
+
             if (await _userService.UsernameExistsAsync(username))
             {
                 AnsiConsole.MarkupLine($"[red]Username '{username}' already exists. Please choose a different username.[/]");
